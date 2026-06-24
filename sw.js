@@ -83,7 +83,7 @@ self.addEventListener('fetch', e => {
         // Есть в кэше — отдаём сразу, обновляем в фоне (stale-while-revalidate)
         fetch(req).then(fresh => {
           if (fresh && (fresh.ok || fresh.type === 'opaque')) {
-            caches.open(CACHE).then(c => c.put(req, fresh));
+            caches.open(CACHE).then(c => c.put(req, fresh.clone()));
           }
         }).catch(() => {});
         return cached;
@@ -91,7 +91,9 @@ self.addEventListener('fetch', e => {
       // Нет в кэше — пробуем сеть, кэшируем успешный ответ
       return fetch(req).then(response => {
         if (response && (response.ok || response.type === 'opaque')) {
-          caches.open(CACHE).then(c => c.put(req, response.clone()));
+          // Клонируем СРАЗУ, до того как тело будет прочитано браузером
+          const toCache = response.clone();
+          caches.open(CACHE).then(c => c.put(req, toCache));
         }
         return response;
       }).catch(async () => {

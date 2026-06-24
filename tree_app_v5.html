@@ -7,6 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0d0f1a">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Дерево задач">
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -527,6 +528,8 @@ function s2c(sx,sy){// screen → canvas coords
 // ══════════════════════════════════════════════════
 let fbDb=null,fbListening=false,fbReceiving=false,fbTimer=null;
 let fbUid=null,fbSyncId=null,fbUserPath=null;
+let fbPermDenied=false; // true — Firebase права не разрешены, бесполезно повторять
+let fbLastError=null;   // последняя ошибка Firebase для диагностики
 
 function randomSyncId(){
   const chars='abcdefghijklmnopqrstuvwxyz0123456789';
@@ -551,6 +554,8 @@ function reconnectSync(newId){
   const oldPath=fbUserPath;
   fbSyncId=newId;
   fbUserPath='sync/'+newId+'/data';
+  fbPermDenied=false; // сбрасываем флаг — даём новый шанс при смене ID
+  fbLastError=null;
   if(fbDb){
     if(oldPath)try{fbDb.ref(oldPath).off();}catch(e){}
     fbListening=false;
@@ -564,16 +569,47 @@ function setFbSt(txt,cls){
   el.textContent=txt;
   el.className=cls||'';
 }
+function bindFbDiag(){
+  const el=document.getElementById('fb-status');
+  if(!el||el._diagBound)return;
+  el._diagBound=true;
+  el.style.cursor='pointer';
+  el.title='Тап — диагностика Firebase';
+  el.addEventListener('click',()=>{
+    const lines=[
+      '🔥 Firebase диагностика',
+      '──────────────────',
+      'UID: '+(fbUid||'нет (не авторизован)'),
+      'Sync ID: '+(fbSyncId||'нет'),
+      'Путь: '+(fbUserPath||'нет'),
+      'Прав нет (blocked): '+fbPermDenied,
+      'Ошибка: '+(fbLastError||'нет'),
+      '──────────────────',
+      fbPermDenied
+        ? '⚠ Проверьте правила в Firebase Console\nи перезагрузите страницу после исправления.'
+        : '✓ Прав нет блокировки.'
+    ];
+    alert(lines.join('\n'));
+  });
+}
 
 function syncToFb(immediate=false){
   if(!fbDb||!fbUserPath)return;
+  if(fbPermDenied)return; // правила Firebase заблокировали доступ — не тратить время
   const doSync=async()=>{
     try{
       setFbSt('⬆ Синхр…','sync');
       await fbDb.ref(fbUserPath).set(JSON.stringify(S));
       setFbSt('☁ '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}),'ok');
     }catch(e){
-      setFbSt('🔴 Ошибка','err');
+      fbLastError=(e.code||e.message||String(e));
+      const isPermission=(fbLastError.toLowerCase().includes('permission')||fbLastError.toLowerCase().includes('denied'));
+      if(isPermission){
+        fbPermDenied=true;
+        setFbSt('🔴 Нет прав (tap ℹ)','err');
+      } else {
+        setFbSt('🔴 Ошибка','err');
+      }
       console.error('FB write:',e);
     }
   };
@@ -587,8 +623,11 @@ function startFbListener(){
   fbListening=true;
   // Connection state
   fbDb.ref('.info/connected').on('value',snap=>{
-    if(snap.val())setFbSt('☁ Подключено','ok');
-    else setFbSt('🔴 Нет связи','err');
+    if(snap.val()){
+      if(!fbPermDenied)setFbSt('☁ Подключено','ok');
+    } else {
+      setFbSt('🔴 Нет связи','err');
+    }
   });
   // Data listener (общая ветка по Sync ID)
   fbDb.ref(fbUserPath).on('value',snap=>{
@@ -614,6 +653,13 @@ function startFbListener(){
         setFbSt('☁ Актуально','ok');
       }
     }catch(e){console.error('FB parse:',e);}
+  }, err=>{
+    // Ошибка чтения — чаще всего permission_denied (неверные правила или нет авторизации)
+    fbListening=false; // сбрасываем флаг чтобы можно было переподключиться
+    fbLastError=(err.code||err.message||String(err));
+    fbPermDenied=true;
+    setFbSt('🔴 Нет прав (tap ℹ)','err');
+    console.error('FB listener error:', err);
   });
 }
 
@@ -640,19 +686,35 @@ function initFirebase(){
     firebase.initializeApp(FB_CONFIG);
     fbDb=firebase.database();
     setFbSt('🟡 Вход…','sync');
-    firebase.auth().signInAnonymously().then(async cred=>{
-      fbUid=cred.user.uid;
-      fbSyncId=getOrCreateSyncId();
-      fbUserPath='sync/'+fbSyncId+'/data';
-      setFbSt('🟡 Подключение…','sync');
-      await migrateLegacyFbData();
-      startFbListener();
-    }).catch(e=>{
+
+    // onAuthStateChanged — правильный способ дождаться готовности авторизации.
+    // Срабатывает как при первом входе, так и при перезагрузке (если токен уже был).
+    firebase.auth().onAuthStateChanged(async user=>{
+      if(user){
+        fbUid=user.uid;
+        if(!fbSyncId){
+          fbSyncId=getOrCreateSyncId();
+          fbUserPath='sync/'+fbSyncId+'/data';
+        }
+        if(!fbListening){
+          setFbSt('🟡 Подключение…','sync');
+          bindFbDiag(); // привязываем диагностику по тапу
+          await migrateLegacyFbData();
+          startFbListener();
+        }
+      }
+      // если user === null — ещё не вошли, ждём signInAnonymously() ниже
+    });
+
+    // Запускаем анонимный вход (если уже был — onAuthStateChanged уже сработает выше)
+    firebase.auth().signInAnonymously().catch(e=>{
       setFbSt('🔴 Ошибка входа','err');
+      fbLastError=String(e);
       console.error('Firebase anonymous auth:',e);
     });
   }catch(e){
     setFbSt('🔴 Ошибка FB','err');
+    fbLastError=String(e);
     console.error('Firebase init:',e);
   }
 }
