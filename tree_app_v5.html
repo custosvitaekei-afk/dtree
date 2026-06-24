@@ -1,0 +1,2349 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Дерево задач v5</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d0f1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Дерево задач">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0f1a;--surf:#151829;--surf2:#1d2035;--border:#252840;
+  --acc:#6c63ff;--red:#ff6584;--grn:#43e97b;--yel:#f9ca24;
+  --txt:#e8eaf0;--txt2:#8890a4;
+}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--txt);overflow:hidden;height:100vh;width:100vw}
+
+/* ─── TOOLBAR ─── */
+#toolbar{
+  position:fixed;top:0;left:0;right:0;height:50px;
+  background:var(--surf);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:5px;padding:0 10px;
+  z-index:1000;overflow-x:auto;overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;
+}
+#toolbar::-webkit-scrollbar{display:none}
+.logo{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;color:var(--acc);flex-shrink:0;margin-right:6px}
+.tb{display:flex;align-items:center;gap:4px;padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surf2);color:var(--txt2);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:inherit;transition:all .15s}
+.tb:hover{border-color:var(--acc);color:var(--acc)}
+.tb.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.tb.ron.on{background:var(--red);border-color:var(--red)}
+.tb.grn{border-color:var(--grn);color:var(--grn);background:#0d200d}
+.tb.grn:hover{background:var(--grn);color:#000}
+#mode-badge{flex-shrink:0;margin-left:auto;padding:4px 9px;border-radius:20px;font-size:10px;font-weight:700;background:var(--border);color:var(--txt2);letter-spacing:.5px;text-transform:uppercase;white-space:nowrap}
+#mode-badge.c{background:#0d2a1a;color:var(--grn)}
+#mode-badge.d{background:#2a0d14;color:var(--red)}
+
+/* ─── CANVAS ─── */
+#cw{
+  position:fixed;top:50px;left:0;right:0;bottom:64px;
+  overflow:hidden;touch-action:none;
+  background:var(--bg);
+  background-image:radial-gradient(circle,#252840 1px,transparent 1px);
+  background-size:26px 26px;
+}
+#cv{position:absolute;width:9000px;height:9000px;transform-origin:0 0}
+#svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+
+/* ─── NODE ─── */
+.node{
+  position:absolute;min-width:150px;max-width:230px;
+  background:var(--surf);border:1.5px solid var(--border);
+  border-radius:11px;padding:11px 11px 9px;
+  user-select:none;z-index:10;
+  box-shadow:0 4px 20px rgba(0,0,0,.5);transition:border-color .15s,box-shadow .15s;
+}
+.node:hover{border-color:var(--acc);box-shadow:0 4px 20px rgba(108,99,255,.2)}
+.node.cs{border-color:var(--grn);box-shadow:0 4px 20px rgba(67,233,123,.3)}
+.node.drag{border-color:var(--yel);box-shadow:0 8px 30px rgba(249,202,36,.3);z-index:200;cursor:grabbing}
+.node.lp-ready{border-color:var(--yel)}/* long-press feedback */
+
+.ntop{display:flex;align-items:flex-start;gap:7px;margin-bottom:7px}
+.badge{flex-shrink:0;width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--acc),#a78bfa);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;font-family:'JetBrains Mono',monospace}
+.badge.t{background:linear-gradient(135deg,var(--yel),#f0932b)}
+.ntxt{flex:1;font-size:13px;line-height:1.5;color:var(--txt);word-break:break-word;min-height:18px;border-radius:4px;padding:1px 3px;outline:none}
+.ntxt:focus{background:rgba(108,99,255,.1);outline:2px solid var(--acc)}
+.nacts{display:flex;gap:3px;flex-shrink:0}
+.nibtn{width:21px;height:21px;border:none;border-radius:5px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;background:var(--border);color:var(--txt2);transition:all .15s}
+.nibtn:hover{background:var(--red);color:#fff}
+.nibtn.e:hover{background:var(--acc)}
+
+.nbody{display:flex;flex-direction:column;gap:4px}
+.cbrow{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--txt2)}
+.cbrow input[type=checkbox]{width:15px;height:15px;accent-color:var(--acc);cursor:pointer;flex-shrink:0}
+.cblabel{flex:1;min-width:0;cursor:pointer;border-radius:3px;padding:1px 2px}
+.cblabel:hover{background:rgba(108,99,255,.1)}
+.cblabel:focus{outline:2px solid var(--acc);background:rgba(108,99,255,.1)}
+.minicbtn{align-self:flex-start;font-size:11px;padding:3px 8px;border-radius:5px;cursor:pointer;font-family:inherit;font-weight:600;border:1px solid var(--border);background:var(--surf2);color:var(--txt2);transition:all .15s}
+.minicbtn:hover{border-color:var(--acc);color:var(--acc)}
+.opentbl{border-color:var(--yel);color:var(--yel)}
+.opentbl:hover{background:var(--yel);color:#000}
+
+/* ─── MODAL ─── */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:3000;backdrop-filter:blur(4px)}
+.modal{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:24px;width:min(480px,96vw);max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.modal h2{font-size:17px;margin-bottom:16px}.modal h2 span{color:var(--acc)}
+.f{margin-bottom:12px}
+.f label{display:block;font-size:11px;color:var(--txt2);margin-bottom:4px;font-weight:700;letter-spacing:.3px}
+.f input,.f select,.f textarea{width:100%;padding:8px 11px;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--txt);font-size:13px;font-family:inherit;outline:none;transition:border-color .15s}
+.f input:focus,.f select:focus{border-color:var(--acc)}
+.f select option{background:var(--surf)}
+.brow{display:flex;gap:7px;justify-content:flex-end;margin-top:6px}
+.mbtn{padding:8px 16px;border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;transition:all .15s}
+.mbtn.cancel{background:var(--border);color:var(--txt2)}.mbtn.cancel:hover{background:var(--surf2)}
+.mbtn.ok{background:var(--acc);color:#fff}.mbtn.ok:hover{background:#7c73ff}
+
+/* ─── TABLE MODAL ─── */
+.tscroll{overflow-x:auto;overflow-y:auto;max-height:360px;border:1px solid var(--border);border-radius:8px;margin-bottom:12px}
+table{border-collapse:collapse;width:100%;font-size:12px}
+th{background:var(--surf2);padding:8px 10px;border-bottom:1px solid var(--border);color:var(--txt2);font-weight:700;white-space:nowrap;position:sticky;top:0;z-index:2}
+th.dth{text-align:left;min-width:130px}
+td{padding:7px 10px;border-bottom:1px solid var(--border);text-align:center}
+td.dtd{text-align:left;color:var(--txt2);font-size:11px;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr.today td{background:rgba(108,99,255,.1)}tr.today td.dtd{color:var(--acc);font-weight:700}
+td input[type=checkbox]{width:16px;height:16px;accent-color:var(--acc);cursor:pointer}
+.sbar{display:flex;align-items:center;gap:14px;background:var(--surf2);border:1px solid var(--border);border-radius:9px;padding:10px 14px;margin-bottom:14px}
+.sv{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--yel)}
+.sl{font-size:11px;color:var(--txt2)}
+.tv{margin-left:auto;font-size:12px;color:var(--txt2)}
+.tv b{color:var(--acc);font-family:'JetBrains Mono',monospace;font-size:16px}
+.atrow{display:flex;gap:7px;margin-top:8px}
+.atrow input{flex:1;padding:7px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--txt);font-family:inherit;font-size:13px;outline:none}
+.atrow input:focus{border-color:var(--acc)}
+.atrow button{padding:7px 12px;background:var(--grn);color:#000;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:13px;white-space:nowrap}
+
+/* ─── ACHIEVEMENTS ─── */
+.alist{display:flex;flex-direction:column;gap:7px}
+.ai{display:flex;align-items:center;gap:11px;background:var(--surf2);border:1px solid var(--border);border-radius:9px;padding:11px 13px;transition:all .2s}
+.ai.earned{border-color:var(--yel);background:rgba(249,202,36,.06)}
+.ai.locked{opacity:.4;filter:grayscale(.7)}
+.aico{font-size:24px;flex-shrink:0}
+.ainfo{flex:1}.ainfo b{font-size:13px;display:block;margin-bottom:2px}.ainfo small{font-size:11px;color:var(--txt2)}
+.adel{width:22px;height:22px;border:none;border-radius:5px;background:var(--border);color:var(--txt2);cursor:pointer;font-size:12px;flex-shrink:0}
+.adel:hover{background:var(--red);color:#fff}
+
+/* ─── STATUS ─── */
+#status{position:fixed;bottom:0;left:0;right:0;height:26px;background:var(--surf);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 12px;font-size:10px;color:var(--txt2);gap:14px;z-index:1000;font-family:'JetBrains Mono',monospace;overflow:hidden}
+#status span b{color:var(--acc)}
+#sstatus{margin-left:auto;color:var(--grn);white-space:nowrap}
+
+/* ─── LONG PRESS HINT ─── */
+#lphint{position:fixed;bottom:34px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.8);color:var(--yel);padding:6px 14px;border-radius:20px;font-size:12px;pointer-events:none;opacity:0;transition:opacity .3s;z-index:5000}
+
+/* ─── DRAG RING (visual indicator for long press) ─── */
+@keyframes ring{0%{transform:scale(.5);opacity:1}100%{transform:scale(1.5);opacity:0}}
+.lp-ring{position:absolute;width:60px;height:60px;border:3px solid var(--yel);border-radius:50%;pointer-events:none;animation:ring .3s forwards;z-index:9999}
+
+/* ─── INSTRUCTIONS ─── */
+.isect{margin-bottom:12px}
+.isect h3{color:var(--acc);font-size:12px;margin-bottom:5px}
+.isect li{font-size:12px;color:var(--txt2);line-height:1.7;list-style:disc inside}
+.kbd{background:var(--border);color:var(--txt);padding:1px 5px;border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:11px}
+
+/* ─── FIREBASE STATUS ─── */
+#fb-status{flex-shrink:0;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700;background:var(--border);color:var(--txt2);letter-spacing:.3px;white-space:nowrap;cursor:default;font-family:'JetBrains Mono',monospace}
+#fb-status.ok{background:#0a2a0a;color:#43e97b}
+#fb-status.err{background:#2a0a0a;color:var(--red)}
+#fb-status.sync{background:#1a1a0a;color:var(--yel)}
+
+/* ─── AUTO-LAYOUT ANIMATION ─── */
+.node.layout-move{transition:left .5s cubic-bezier(.4,0,.2,1),top .5s cubic-bezier(.4,0,.2,1),border-color .15s,box-shadow .15s}
+
+/* ══════════════════════════════════════════════════
+   LEAGUE / PROGRESS BAR (v5)
+   ══════════════════════════════════════════════════ */
+#leaguebar{
+  position:fixed;left:0;right:0;bottom:26px;height:38px;
+  background:var(--surf);border-top:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;padding:0 10px;
+  z-index:999;font-family:'Inter',sans-serif;overflow:hidden;
+}
+#lg-icon{font-size:18px;flex-shrink:0}
+#lg-name{font-size:11px;font-weight:700;color:var(--yel);flex-shrink:0;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#lg-track{flex:1;height:9px;border-radius:6px;background:var(--border);overflow:hidden;position:relative;min-width:40px}
+#lg-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--acc),#a78bfa);transition:width .4s ease}
+#lg-pts{font-size:10px;color:var(--txt2);flex-shrink:0;font-family:'JetBrains Mono',monospace;white-space:nowrap}
+#lg-day{font-size:10px;color:var(--grn);flex-shrink:0;font-family:'JetBrains Mono',monospace;white-space:nowrap;cursor:pointer}
+#lg-chest{flex-shrink:0;position:relative;cursor:pointer;font-size:18px;padding:2px 4px;border-radius:7px;background:var(--surf2);border:1px solid var(--border)}
+#lg-chest.has{animation:chestpulse 1.4s infinite}
+#lg-chest .badge-n{position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;font-size:9px;font-weight:700;border-radius:8px;padding:1px 4px;line-height:1.3;min-width:14px;text-align:center}
+@keyframes chestpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+
+/* ─── LEVEL-UP OVERLAY ─── */
+#levelup-ov{position:fixed;inset:0;background:rgba(0,0,0,.82);display:none;align-items:center;justify-content:center;z-index:6000;flex-direction:column;text-align:center}
+#levelup-ov.show{display:flex}
+#lu-icon{font-size:64px;animation:luIconPop .6s ease}
+#lu-title{font-size:22px;font-weight:700;color:var(--yel);margin-top:10px;animation:luTextIn .5s ease .1s both}
+#lu-sub{font-size:14px;color:var(--txt2);margin-top:6px;animation:luTextIn .5s ease .2s both}
+#lu-close{margin-top:22px;padding:10px 26px;border:none;border-radius:8px;background:var(--acc);color:#fff;font-weight:700;font-size:14px;cursor:pointer}
+@keyframes luIconPop{0%{transform:scale(0) rotate(-30deg);opacity:0}60%{transform:scale(1.3) rotate(8deg);opacity:1}100%{transform:scale(1) rotate(0)}}
+@keyframes luTextIn{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:translateY(0)}}
+.confetti{position:absolute;top:-10px;font-size:20px;animation:confFall linear forwards}
+@keyframes confFall{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(110vh) rotate(360deg);opacity:0}}
+
+/* ─── CHEST MODAL ─── */
+.chestbox{display:flex;flex-direction:column;align-items:center;gap:10px;padding:10px 0}
+.chest-emoji{font-size:72px;cursor:pointer;transition:transform .15s;user-select:none}
+.chest-emoji:hover{transform:scale(1.08)}
+.chest-emoji.shaking{animation:chestShake .6s ease}
+@keyframes chestShake{0%,100%{transform:rotate(0)}20%{transform:rotate(-8deg) scale(1.05)}40%{transform:rotate(8deg) scale(1.05)}60%{transform:rotate(-6deg) scale(1.1)}80%{transform:rotate(6deg) scale(1.1)}}
+.chest-reward{font-size:84px;animation:rewardPop .55s cubic-bezier(.34,1.56,.64,1)}
+@keyframes rewardPop{0%{transform:scale(0)}70%{transform:scale(1.25)}100%{transform:scale(1)}}
+.rarity-tag{font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;letter-spacing:.5px;text-transform:uppercase}
+.rarity-tag.common{background:#2a2d40;color:#aab0c4}
+.rarity-tag.rare{background:#0d2a3a;color:#4fc3f7}
+.rarity-tag.epic{background:#2a0d3a;color:#c77dff}
+.rarity-tag.legendary{background:#3a2a0d;color:var(--yel);box-shadow:0 0 14px rgba(249,202,36,.5)}
+.chest-list-item{display:flex;align-items:center;gap:10px;background:var(--surf2);border:1px solid var(--border);border-radius:9px;padding:9px 12px;margin-bottom:7px}
+.chest-list-item .ce{font-size:26px}
+.chest-list-item .ci{flex:1;font-size:12px;color:var(--txt2)}
+.pity-note{font-size:10px;color:var(--txt2);text-align:center;margin-top:4px}
+
+/* ─── COLLECTION GRID ─── */
+.collgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px;margin-bottom:10px}
+.collslot{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:9px;border:1.5px solid var(--border);background:var(--surf2);font-size:22px;position:relative}
+.collslot.owned.common{border-color:#aab0c4}
+.collslot.owned.rare{border-color:#4fc3f7;box-shadow:0 0 8px rgba(79,195,247,.3)}
+.collslot.owned.epic{border-color:#c77dff;box-shadow:0 0 8px rgba(199,125,255,.35)}
+.collslot.owned.legendary{border-color:var(--yel);box-shadow:0 0 12px rgba(249,202,36,.5)}
+.collslot.locked{opacity:.35;font-size:16px;color:var(--txt2)}
+.collslot .cnt{position:absolute;bottom:1px;right:3px;font-size:8px;color:var(--txt2);font-family:'JetBrains Mono',monospace}
+.colltabs{display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap}
+.colltab{font-size:11px;padding:5px 10px;border-radius:14px;border:1px solid var(--border);background:var(--surf2);color:var(--txt2);cursor:pointer;font-weight:700}
+.colltab.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.collstats{font-size:11px;color:var(--txt2);margin-bottom:8px}
+.collstats b{color:var(--txt)}
+
+/* ─── LEADERBOARD / COMPETITORS ─── */
+.lbrow{display:flex;align-items:center;gap:10px;background:var(--surf2);border:1px solid var(--border);border-radius:9px;padding:9px 12px;margin-bottom:6px}
+.lbrow.me{border-color:var(--acc);background:rgba(108,99,255,.08)}
+.lbrank{width:22px;text-align:center;font-weight:700;color:var(--txt2);font-family:'JetBrains Mono',monospace;flex-shrink:0}
+.lbname{flex:1;font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lbscore{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--yel);font-size:13px;flex-shrink:0}
+.lbdel{width:20px;height:20px;border:none;border-radius:5px;background:var(--border);color:var(--txt2);cursor:pointer;font-size:11px;flex-shrink:0}
+.lbdel:hover{background:var(--red);color:#fff}
+.evlog{max-height:140px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-top:10px;background:var(--surf2)}
+.evlog .ev{font-size:11px;color:var(--txt2);padding:3px 0;border-bottom:1px solid var(--border)}
+.evlog .ev:last-child{border-bottom:none}
+.daystart-box{text-align:center;background:var(--surf2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px}
+.daystart-box .dv{font-family:'JetBrains Mono',monospace;font-size:30px;font-weight:700;color:var(--grn)}
+.daystart-box .dl{font-size:11px;color:var(--txt2);margin-top:2px}
+
+/* ─── LEAGUE TABLE MODAL ─── */
+.leaguetbl-row{display:flex;align-items:center;gap:9px;padding:7px 10px;border-bottom:1px solid var(--border);font-size:12px}
+.leaguetbl-row.cur{background:rgba(108,99,255,.12);border-radius:6px}
+.leaguetbl-row .li{font-size:18px;width:24px;text-align:center}
+.leaguetbl-row .ln{flex:1;font-weight:700}
+.leaguetbl-row .lt{font-family:'JetBrains Mono',monospace;color:var(--txt2)}
+
+/* ─── SETTINGS ─── */
+.setrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.setrow label{font-size:12px;color:var(--txt2);flex:1}
+.setrow input,.setrow select{width:110px;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <span class="logo">🌳</span>
+  <button class="tb" id="bAdd">＋ Рамка</button>
+  <button class="tb" id="bConn">↗ Стрелка</button>
+  <button class="tb" id="bAuto" title="Авто-расположить рамки (dagre)">⚡ Авто</button>
+  <button class="tb" id="bTbl">📅 Таблица</button>
+  <button class="tb" id="bAch">🏆 Награда</button>
+  <button class="tb" id="bAchV">🏅 Награды</button>
+  <button class="tb" id="bLg" title="Таблица лиг">🎖 Лиги</button>
+  <button class="tb" id="bRace" title="Счётчик дней и конкуренты">🏁 Гонка</button>
+  <button class="tb" id="bColl" title="Коллекция эмодзи">🎒 Коллекция</button>
+  <button class="tb" id="bSet" title="Настройки геймификации">⚙ Настройки</button>
+  <button class="tb ron" id="bDel">🗑 Удалить</button>
+  <button class="tb grn" id="bSave">💾 Сохранить</button>
+  <button class="tb" id="bExp" title="Экспорт данных в файл">📤</button>
+  <button class="tb" id="bImp" title="Импорт данных из файла">📥</button>
+  <button class="tb" id="bHelp">❓</button>
+  <span id="fb-status" title="Статус Firebase синхронизации">⚫ Офлайн</span>
+  <div id="mode-badge">НАВ</div>
+</div>
+
+<div id="cw">
+  <div id="cv">
+    <svg id="svg" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="mh" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+          <polygon points="0 0,10 3.5,0 7" fill="#6c63ff"/>
+        </marker>
+      </defs>
+      <g id="ag"></g>
+    </svg>
+  </div>
+</div>
+
+<div id="leaguebar">
+  <span id="lg-icon">🌱</span>
+  <span id="lg-name">Дерево</span>
+  <div id="lg-track"><div id="lg-fill" style="width:0%"></div></div>
+  <span id="lg-pts">0 / 100</span>
+  <span id="lg-day" title="Открыть гонку с конкурентами">—</span>
+  <span id="lg-chest" title="Сундуки">📦<span class="badge-n" id="lg-chest-n" style="display:none">0</span></span>
+</div>
+
+<div id="status">
+  <span>Рамок: <b id="sn">0</b></span>
+  <span>Стрелок: <b id="sa">0</b></span>
+  <span>Таблиц: <b id="st">0</b></span>
+  <span id="sstatus">✓ Готово</span>
+</div>
+
+<div id="levelup-ov">
+  <div id="lu-icon">🎖</div>
+  <div id="lu-title">Новая лига!</div>
+  <div id="lu-sub"></div>
+  <button id="lu-close">Ура!</button>
+</div>
+
+<div id="lphint">Удерживайте рамку для перемещения</div>
+<input type="file" id="fileInp" accept=".json" style="display:none">
+
+<script>
+'use strict';
+// ══════════════════════════════════════════════════
+//  🔥 FIREBASE CONFIG — ЗАПОЛНИТЕ ПОСЛЕ РЕГИСТРАЦИИ
+//  Оставьте пустые строки ("") чтобы отключить синхронизацию
+// ══════════════════════════════════════════════════
+const FB_CONFIG = {
+  apiKey:            "AIzaSyDP3eUSt460CL4O1q4nRszFZizHMysD-FE",
+  authDomain:        "vita-17a8d.firebaseapp.com",
+  databaseURL:       "https://vita-17a8d-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:         "vita-17a8d",
+  storageBucket:     "vita-17a8d.firebasestorage.app",
+  messagingSenderId: "1025016305956",
+  appId:             "1:1025016305956:web:48738cc76af2740dc2fbb1"
+};
+const FB_LEGACY_PATH = "dtree_main"; // путь, где раньше (v4) лежали данные без авторизации
+
+// ══════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════
+let S = {
+  nodes:{},   // id→{id,x,y,text,type,tableId,checkboxes:[{checked,label}]}
+  conns:[],   // [{id,from,to}]
+  tables:{},  // id→{id,name,tasks:[{id,name}],entries:{dateKey:{taskId:bool}}}
+  achiev:[],  // [{id,text,icon,cond:{type,nodeId,tableId,threshold}}]
+  cam:{x:0,y:0,scale:1},
+  lastModified:0,  // timestamp for Firebase conflict resolution
+  // ── v5 gamification ──
+  settings:{
+    mainNodeId:null,   // id рамки, чьи очки отслеживаются в лиге/штрафах
+    penalty:10,        // штраф за пропущенный день (по умолчанию -10)
+    eventMin:-5,       // диапазон случайных событий конкурентов
+    eventMax:15
+  },
+  game:{
+    penaltyAccum:0,        // суммарный вычет очков (эффективный балл = max(0,raw-penaltyAccum))
+    lastDailyCheck:null,   // последняя дата (YYYY-MM-DD), для которой уже прошла дневная проверка
+    lastLeagueLevel:0,     // последний известный уровень лиги (для детекции level-up)
+    grantedRoundScore:0,   // последний "круглый" порог (кратный 100), за который уже выдан сундук
+    grantedStreaks:{},     // {tableId:[7,30,...]} — уже выданные стрик-сундуки
+    perfectDayDate:null,   // дата последнего выданного "идеальный день" сундука
+    chests:[],             // [{id,reason}] — невскрытые сундуки
+    opensSinceLegendary:0, // счётчик для пити-таймера
+    startDate:null,        // дата нажатия «Старт» гонки
+    competitors:[],        // [{id,name,rate,eventTotal}]
+    eventLog:[]            // [{date,text}] — лог случайных событий конкурентов
+  },
+  collection:{}             // {emojiId: count}
+};
+let uid=1;
+const gid=p=>p+'_'+Date.now()+'_'+(uid++);
+
+// ══════════════════════════════════════════════════
+//  STORAGE  (IndexedDB + localStorage dual)
+// ══════════════════════════════════════════════════
+const SKEY='dtree_v5';
+const SKEY_LEGACY='dtree_v4'; // ключ предыдущей версии — для бесшовной миграции
+let idb=null;
+
+async function openIDB(){
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open('DtreeDB',1);
+    r.onupgradeneeded=e=>e.target.result.createObjectStore('d');
+    r.onsuccess=e=>{res(e.target.result)};
+    r.onerror=()=>rej(r.error);
+  });
+}
+
+async function persist(){
+  recomputeProgress(); // v5: проверка лиги/сундуков/стриков перед сохранением
+  S.lastModified=Date.now();
+  const json=JSON.stringify(S);
+  // IDB
+  if(idb){
+    try{
+      await new Promise((res,rej)=>{
+        const tx=idb.transaction('d','readwrite');
+        tx.objectStore('d').put(json,SKEY);
+        tx.oncomplete=res;tx.onerror=rej;
+      });
+    }catch(e){}
+  }
+  // localStorage backup
+  try{localStorage.setItem(SKEY,json);}catch(e){}
+  const t=new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('sstatus').textContent='✓ Сохранено '+t;
+  // Firebase sync (debounced, skipped when receiving remote update)
+  if(!fbReceiving)syncToFb();
+}
+
+async function restore(){
+  // Try IDB (new v5 key first, then legacy v4 key)
+  if(idb){
+    try{
+      const tryGet=key=>new Promise((res,rej)=>{
+        const tx=idb.transaction('d','readonly');
+        const rq=tx.objectStore('d').get(key);
+        rq.onsuccess=()=>res(rq.result);rq.onerror=rej;
+      });
+      const r=await tryGet(SKEY);
+      if(r)return JSON.parse(r);
+      const legacy=await tryGet(SKEY_LEGACY);
+      if(legacy){console.log('Найдены данные предыдущей версии (IDB) — мигрируем.');return JSON.parse(legacy);}
+    }catch(e){}
+  }
+  // localStorage fallback (new key, then legacy key)
+  try{const r=localStorage.getItem(SKEY);if(r)return JSON.parse(r);}catch(e){}
+  try{
+    const legacy=localStorage.getItem(SKEY_LEGACY);
+    if(legacy){console.log('Найдены данные предыдущей версии (localStorage) — мигрируем.');return JSON.parse(legacy);}
+  }catch(e){}
+  return null;
+}
+
+function migrate(s){
+  // bool[] → {checked,label}[]
+  Object.values(s.nodes||{}).forEach(n=>{
+    if(!Array.isArray(n.checkboxes))n.checkboxes=[];
+    n.checkboxes=n.checkboxes.map((v,i)=>
+      typeof v==='boolean'?{checked:v,label:'Галочка '+(i+1)}:v
+    );
+  });
+  if(!s.cam)s.cam={x:0,y:0,scale:1};
+  if(!s.achiev)s.achiev=[];
+  if(!s.lastModified)s.lastModified=0;
+  // ── v5: backfill gamification fields for old (v4 and earlier) saves ──
+  if(!s.settings)s.settings={};
+  if(s.settings.mainNodeId===undefined)s.settings.mainNodeId=null;
+  if(typeof s.settings.penalty!=='number')s.settings.penalty=10;
+  if(typeof s.settings.eventMin!=='number')s.settings.eventMin=-5;
+  if(typeof s.settings.eventMax!=='number')s.settings.eventMax=15;
+  if(!s.game)s.game={};
+  if(typeof s.game.penaltyAccum!=='number')s.game.penaltyAccum=0;
+  if(s.game.lastDailyCheck===undefined)s.game.lastDailyCheck=null;
+  if(typeof s.game.lastLeagueLevel!=='number')s.game.lastLeagueLevel=0;
+  if(typeof s.game.grantedRoundScore!=='number')s.game.grantedRoundScore=0;
+  if(!s.game.grantedStreaks)s.game.grantedStreaks={};
+  if(s.game.perfectDayDate===undefined)s.game.perfectDayDate=null;
+  if(!Array.isArray(s.game.chests))s.game.chests=[];
+  if(typeof s.game.opensSinceLegendary!=='number')s.game.opensSinceLegendary=0;
+  if(s.game.startDate===undefined)s.game.startDate=null;
+  if(!Array.isArray(s.game.competitors))s.game.competitors=[];
+  if(!Array.isArray(s.game.eventLog))s.game.eventLog=[];
+  if(!s.collection)s.collection={};
+  return s;
+}
+
+// ══════════════════════════════════════════════════
+//  DATE HELPERS  (local time, no UTC shift)
+// ══════════════════════════════════════════════════
+function localKey(d){
+  const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;
+}
+function todayKey(){return localKey(new Date());}
+
+// ══════════════════════════════════════════════════
+//  VALUE COMPUTATION
+// ══════════════════════════════════════════════════
+function nodeVal(id){
+  const n=S.nodes[id];if(!n)return 0;
+  if(n.type==='table'&&n.tableId){
+    const t=S.tables[n.tableId];if(!t)return 0;
+    let s=0;Object.values(t.entries||{}).forEach(day=>Object.values(day).forEach(v=>{if(v)s++;}));
+    return s;
+  }
+  const ch=S.conns.filter(c=>c.from===id);
+  if(!ch.length)return(n.checkboxes||[]).filter(v=>v.checked).length;
+  return ch.reduce((a,c)=>a+nodeVal(c.to),0);
+}
+
+function streak(tableId){
+  const t=S.tables[tableId];if(!t)return 0;
+  let s=0;const d=new Date();
+  for(let i=0;i<9999;i++){
+    const k=localKey(d);
+    const e=t.entries[k];
+    if(!e||!Object.values(e).some(Boolean))break;
+    s++;d.setDate(d.getDate()-1);
+  }
+  return s;
+}
+
+// ══════════════════════════════════════════════════
+//  CAMERA
+// ══════════════════════════════════════════════════
+const cw=document.getElementById('cw');
+const cv=document.getElementById('cv');
+
+function applyCamera(){
+  cv.style.transform=`translate(${S.cam.x}px,${S.cam.y}px) scale(${S.cam.scale})`;
+}
+function s2c(sx,sy){// screen → canvas coords
+  return{x:(sx-S.cam.x)/S.cam.scale,y:(sy-S.cam.y-50)/S.cam.scale};
+}
+
+// ══════════════════════════════════════════════════
+//  FIREBASE SYNC  (v5: анонимная авторизация + общий "Sync ID")
+//
+//  ВАЖНО: анонимная авторизация Firebase создаёт РАЗНЫЙ uid на каждом
+//  устройстве/браузере — если использовать путь /users/{auth.uid}/ буквально,
+//  телефон и ноутбук получат два разных uid и НЕ будут синхронизироваться
+//  друг с другом (каждое устройство будет писать в свою изолированную ветку).
+//  Чтобы реально работала синхронизация между несколькими устройствами одного
+//  человека (а это явно нужно — пользователь использует Blackview Shark 9 +
+//  Windows 7 + Windows 11), используется отдельный случайный "Sync ID"
+//  (128-битная случайная строка, как пароль), который один раз копируется
+//  в Настройках с одного устройства на другие. Анонимная авторизация всё
+//  равно обязательна — без неё Firebase Realtime Database вообще не пустит
+//  ни читать, ни писать (см. правила безопасности в инструкции).
+// ══════════════════════════════════════════════════
+let fbDb=null,fbListening=false,fbReceiving=false,fbTimer=null;
+let fbUid=null,fbSyncId=null,fbUserPath=null;
+
+function randomSyncId(){
+  const chars='abcdefghijklmnopqrstuvwxyz0123456789';
+  let s='';for(let i=0;i<22;i++)s+=chars[Math.floor(Math.random()*chars.length)];
+  return s;
+}
+function getOrCreateSyncId(){
+  let id=null;
+  try{id=localStorage.getItem('dtree_syncid');}catch(e){}
+  if(!id){
+    id=randomSyncId();
+    try{localStorage.setItem('dtree_syncid',id);}catch(e){}
+  }
+  return id;
+}
+// Переключение на другой Sync ID (используется при "привязке" нового устройства
+// к уже существующим данным — ввод ID, скопированного с первого устройства).
+function reconnectSync(newId){
+  newId=(newId||'').trim().toLowerCase();
+  if(!newId)return;
+  try{localStorage.setItem('dtree_syncid',newId);}catch(e){}
+  const oldPath=fbUserPath;
+  fbSyncId=newId;
+  fbUserPath='sync/'+newId+'/data';
+  if(fbDb){
+    if(oldPath)try{fbDb.ref(oldPath).off();}catch(e){}
+    fbListening=false;
+    startFbListener();
+  }
+}
+
+function setFbSt(txt,cls){
+  const el=document.getElementById('fb-status');
+  if(!el)return;
+  el.textContent=txt;
+  el.className=cls||'';
+}
+
+function syncToFb(immediate=false){
+  if(!fbDb||!fbUserPath)return;
+  const doSync=async()=>{
+    try{
+      setFbSt('⬆ Синхр…','sync');
+      await fbDb.ref(fbUserPath).set(JSON.stringify(S));
+      setFbSt('☁ '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}),'ok');
+    }catch(e){
+      setFbSt('🔴 Ошибка','err');
+      console.error('FB write:',e);
+    }
+  };
+  if(immediate){doSync();return;}
+  clearTimeout(fbTimer);
+  fbTimer=setTimeout(doSync,700);
+}
+
+function startFbListener(){
+  if(!fbDb||!fbUserPath||fbListening)return;
+  fbListening=true;
+  // Connection state
+  fbDb.ref('.info/connected').on('value',snap=>{
+    if(snap.val())setFbSt('☁ Подключено','ok');
+    else setFbSt('🔴 Нет связи','err');
+  });
+  // Data listener (общая ветка по Sync ID)
+  fbDb.ref(fbUserPath).on('value',snap=>{
+    const raw=snap.val();
+    if(!raw){
+      // Firebase пуст — загружаем туда локальные данные
+      if(Object.keys(S.nodes).length)syncToFb(true);
+      return;
+    }
+    try{
+      const remote=migrate(JSON.parse(raw));
+      const remoteTs=remote.lastModified||0;
+      const localTs=S.lastModified||0;
+      if(remoteTs>localTs+200){
+        // Удалённые данные новее — применяем
+        fbReceiving=true;
+        S=remote;
+        persist().then(()=>{fbReceiving=false;});
+        renderAll();
+        renderLeagueBar();
+        setFbSt('⬇ Обновлено','ok');
+      } else {
+        setFbSt('☁ Актуально','ok');
+      }
+    }catch(e){console.error('FB parse:',e);}
+  });
+}
+
+// Бесшовная миграция: если в новой ветке (sync/{id}/data) ещё нет данных,
+// но в старом общем пути (FB_LEGACY_PATH, использовался в v4 без авторизации)
+// что-то есть — переносим один раз.
+async function migrateLegacyFbData(){
+  try{
+    const mineSnap=await fbDb.ref(fbUserPath).once('value');
+    if(mineSnap.exists())return; // данные уже есть — ничего не делаем
+    const legacySnap=await fbDb.ref(FB_LEGACY_PATH).once('value');
+    if(legacySnap.exists()){
+      await fbDb.ref(fbUserPath).set(legacySnap.val());
+      console.log('✅ Старые данные из "'+FB_LEGACY_PATH+'" перенесены в "'+fbUserPath+'"');
+    }
+  }catch(e){
+    console.warn('Миграция старых Firebase-данных не удалась (это не критично):',e);
+  }
+}
+
+function initFirebase(){
+  if(!FB_CONFIG.apiKey){return;}// конфиг не заполнен
+  try{
+    firebase.initializeApp(FB_CONFIG);
+    fbDb=firebase.database();
+    setFbSt('🟡 Вход…','sync');
+    firebase.auth().signInAnonymously().then(async cred=>{
+      fbUid=cred.user.uid;
+      fbSyncId=getOrCreateSyncId();
+      fbUserPath='sync/'+fbSyncId+'/data';
+      setFbSt('🟡 Подключение…','sync');
+      await migrateLegacyFbData();
+      startFbListener();
+    }).catch(e=>{
+      setFbSt('🔴 Ошибка входа','err');
+      console.error('Firebase anonymous auth:',e);
+    });
+  }catch(e){
+    setFbSt('🔴 Ошибка FB','err');
+    console.error('Firebase init:',e);
+  }
+}
+
+// ══════════════════════════════════════════════════
+//  AUTO-LAYOUT (dagre)
+// ══════════════════════════════════════════════════
+document.getElementById('bAuto').addEventListener('click',()=>{
+  if(!window.dagre){
+    alert('Библиотека авто-раскладки не загружена.\nПроверьте интернет-соединение и перезагрузите страницу.');
+    return;
+  }
+  const nodeIds=Object.keys(S.nodes);
+  if(nodeIds.length<2){alert('Нужно хотя бы 2 рамки.');return;}
+
+  const g=new dagre.graphlib.Graph({multigraph:false});
+  g.setGraph({rankdir:'TB',nodesep:50,ranksep:70,marginx:80,marginy:80});
+  g.setDefaultEdgeLabel(()=>({}));
+
+  // Determine sizes from DOM (or estimate)
+  nodeIds.forEach(id=>{
+    const el=document.getElementById('nd-'+id);
+    const w=el?el.offsetWidth+24:200;
+    const h=el?el.offsetHeight+24:100;
+    g.setNode(id,{width:w,height:h,label:id});
+  });
+
+  S.conns.forEach(c=>{
+    if(S.nodes[c.from]&&S.nodes[c.to]&&c.from!==c.to)
+      try{g.setEdge(c.from,c.to);}catch(e){}
+  });
+
+  dagre.layout(g);
+
+  // Animate: add class, apply positions, remove class after
+  nodeIds.forEach(id=>{
+    const el=document.getElementById('nd-'+id);
+    if(el)el.classList.add('layout-move');
+  });
+
+  g.nodes().forEach(id=>{
+    const gn=g.node(id);
+    if(gn&&S.nodes[id]){
+      S.nodes[id].x=Math.round(gn.x-gn.width/2+10);
+      S.nodes[id].y=Math.round(gn.y-gn.height/2+10);
+      const el=document.getElementById('nd-'+id);
+      if(el){el.style.left=S.nodes[id].x+'px';el.style.top=S.nodes[id].y+'px';}
+    }
+  });
+  renderArrows();
+
+  setTimeout(()=>{
+    nodeIds.forEach(id=>{
+      const el=document.getElementById('nd-'+id);
+      if(el)el.classList.remove('layout-move');
+    });
+  },600);
+
+  persist();
+});
+
+// ══════════════════════════════════════════════════
+//  SMART PLACEMENT
+// ══════════════════════════════════════════════════
+function smartPlace(px,py){
+  const W=220,H=100,PAD=24;
+  const ns=Object.values(S.nodes);
+  const ok=(x,y)=>!ns.some(n=>x<n.x+W+PAD&&x+W+PAD>n.x&&y<n.y+H+PAD&&y+H+PAD>n.y);
+  if(ok(px,py))return{x:px,y:py};
+  for(let r=1;r<=30;r++){
+    for(let a=0;a<16;a++){
+      const ang=(a/16)*Math.PI*2;
+      const x=px+Math.cos(ang)*r*(W+PAD)*0.4;
+      const y=py+Math.sin(ang)*r*(H+PAD)*0.4;
+      if(ok(x,y))return{x,y};
+    }
+  }
+  return{x:px+260,y:py+120};
+}
+
+// ══════════════════════════════════════════════════
+//  RENDER
+// ══════════════════════════════════════════════════
+function renderAll(){renderNodes();renderArrows();updateStatus();applyCamera();}
+
+function renderNodes(){
+  document.querySelectorAll('.node').forEach(e=>e.remove());
+  Object.values(S.nodes).forEach(n=>cv.appendChild(buildNode(n)));
+}
+
+function buildNode(n){
+  const el=document.createElement('div');
+  el.className='node';el.id='nd-'+n.id;
+  el.style.left=n.x+'px';el.style.top=n.y+'px';
+
+  const val=nodeVal(n.id);
+  const isLeaf=!S.conns.find(c=>c.from===n.id)&&n.type!=='table';
+
+  // — top row
+  const top=document.createElement('div');top.className='ntop';
+
+  const badge=document.createElement('div');
+  badge.className='badge'+(n.type==='table'?' t':'');
+  badge.textContent=val>9999?'∞':val;top.appendChild(badge);
+
+  const tx=document.createElement('div');
+  tx.className='ntxt';tx.contentEditable='false';
+  tx.textContent=n.text||'Рамка';tx.spellcheck=false;
+  tx.addEventListener('dblclick',e=>{e.stopPropagation();startEdit(n,tx);});
+  // FIX v3: tap on text in nav mode opens edit on mobile (no long press)
+  tx.addEventListener('touchend',e=>{
+    e.stopPropagation();e.preventDefault();
+    if(mode==='nav'&&!dragging){startEdit(n,tx);}
+  });
+  tx.addEventListener('blur',()=>{n.text=tx.textContent.trim()||'Рамка';tx.contentEditable='false';persist();});
+  tx.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();tx.blur();}});
+  top.appendChild(tx);
+
+  const acts=document.createElement('div');acts.className='nacts';
+  const eb=mib('✎','e','Редактировать');eb.addEventListener('click',e=>{e.stopPropagation();startEdit(n,tx);});
+  const db=mib('✕','','Удалить');db.addEventListener('click',e=>{e.stopPropagation();if(confirm('Удалить рамку?'))delNode(n.id);});
+  acts.appendChild(eb);acts.appendChild(db);top.appendChild(acts);
+  el.appendChild(top);
+
+  // — body
+  const body=document.createElement('div');body.className='nbody';
+
+  if(isLeaf){
+    if(!n.checkboxes||!n.checkboxes.length)n.checkboxes=[];
+    n.checkboxes.forEach((cbObj,i)=>{
+      const row=document.createElement('div');row.className='cbrow';
+      const cb=document.createElement('input');cb.type='checkbox';
+      cb.checked=cbObj.checked;
+      cb.addEventListener('change',e=>{e.stopPropagation();cbObj.checked=cb.checked;persist();renderAll();});
+
+      const lbl=document.createElement('div');lbl.className='cblabel';
+      lbl.contentEditable='false';lbl.textContent=cbObj.label||'Галочка '+(i+1);
+      lbl.title='Дважды кликните для редактирования';
+      lbl.addEventListener('dblclick',e=>{
+        e.stopPropagation();lbl.contentEditable='true';lbl.focus();
+        const sel=window.getSelection();const r=document.createRange();
+        r.selectNodeContents(lbl);r.collapse(false);sel.removeAllRanges();sel.addRange(r);
+      });
+      // FIX v3: single tap also opens edit on mobile
+      lbl.addEventListener('touchend',e=>{
+        e.stopPropagation();e.preventDefault();
+        lbl.contentEditable='true';lbl.focus();
+        setTimeout(()=>{
+          try{const sel=window.getSelection();const r=document.createRange();
+          r.selectNodeContents(lbl);sel.removeAllRanges();sel.addRange(r);}catch(ex){}
+        },50);
+      });
+      lbl.addEventListener('blur',()=>{cbObj.label=lbl.textContent.trim()||'Галочка '+(i+1);lbl.contentEditable='false';persist();});
+      lbl.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();lbl.blur();}});
+
+      const delCb=mib('✕','','Удалить галочку');
+      delCb.style.fontSize='9px';delCb.style.width='16px';delCb.style.height='16px';
+      delCb.addEventListener('click',e=>{e.stopPropagation();n.checkboxes.splice(i,1);persist();renderAll();});
+
+      row.appendChild(cb);row.appendChild(lbl);row.appendChild(delCb);body.appendChild(row);
+    });
+    const addCb=document.createElement('button');addCb.className='minicbtn';addCb.textContent='＋ Галочка';
+    addCb.addEventListener('click',e=>{e.stopPropagation();n.checkboxes.push({checked:false,label:'Галочка '+(n.checkboxes.length+1)});persist();renderAll();});
+    body.appendChild(addCb);
+  }
+
+  if(n.type==='table'&&n.tableId){
+    const str=streak(n.tableId);
+    const tb=document.createElement('button');
+    tb.className='minicbtn opentbl';
+    tb.textContent='📅 Таблица'+(str?'  🔥'+str+'д.':'');
+    tb.addEventListener('click',e=>{e.stopPropagation();openTable(n.tableId);});
+    body.appendChild(tb);
+  }
+
+  if(body.children.length)el.appendChild(body);
+
+  // — drag & tap handlers
+  el.addEventListener('mousedown',e=>onMD(e,n.id));
+  el.addEventListener('touchstart',e=>onTS(e,n.id),{passive:false});
+  el.addEventListener('touchend',e=>onTE(e,n.id),{passive:false});
+
+  return el;
+}
+
+function mib(icon,cls,title){
+  const b=document.createElement('button');b.className='nibtn '+cls;b.textContent=icon;b.title=title;return b;
+}
+function startEdit(n,tx){
+  tx.contentEditable='true';tx.focus();
+  const r=document.createRange();r.selectNodeContents(tx);r.collapse(false);
+  const s=window.getSelection();s.removeAllRanges();s.addRange(r);
+}
+
+// ══════════════════════════════════════════════════
+//  ARROWS
+// ══════════════════════════════════════════════════
+function renderArrows(){
+  const g=document.getElementById('ag');g.innerHTML='';
+  S.conns.forEach(c=>{
+    const fn=S.nodes[c.from],tn=S.nodes[c.to];if(!fn||!tn)return;
+    const fe=document.getElementById('nd-'+c.from),te=document.getElementById('nd-'+c.to);
+    if(!fe||!te)return;
+    const x1=fn.x+fe.offsetWidth/2,y1=fn.y+fe.offsetHeight+3;
+    const x2=tn.x+te.offsetWidth/2,y2=tn.y-3;
+    const my=(y1+y2)/2;
+    const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d',`M${x1},${y1}C${x1},${my} ${x2},${my} ${x2},${y2}`);
+    p.setAttribute('stroke','#6c63ff');p.setAttribute('stroke-width','2');
+    p.setAttribute('fill','none');p.setAttribute('marker-end','url(#mh)');
+    p.style.pointerEvents='stroke';p.style.cursor='pointer';
+    p.addEventListener('mouseenter',()=>{p.setAttribute('stroke','#ff6584');p.setAttribute('stroke-width','3');});
+    p.addEventListener('mouseleave',()=>{p.setAttribute('stroke','#6c63ff');p.setAttribute('stroke-width','2');});
+    p.addEventListener('click',e=>{
+      if(mode==='del'){e.stopPropagation();if(confirm('Удалить стрелку?')){S.conns=S.conns.filter(x=>x.id!==c.id);persist();renderAll();}}
+    });
+    g.appendChild(p);
+  });
+}
+
+// ══════════════════════════════════════════════════
+//  DRAG (MOUSE)
+// ══════════════════════════════════════════════════
+let dragging=null,panning=null;
+
+function onMD(e,id){
+  if(e.button!==0)return;
+  const tg=e.target;
+  if(tg.tagName==='BUTTON'||tg.tagName==='INPUT'||tg.contentEditable==='true')return;
+  // FIX v3: handle conn/del modes on desktop
+  if(mode==='conn'){e.stopPropagation();connectClick(id);return;}
+  if(mode==='del'){e.stopPropagation();if(confirm('Удалить "'+S.nodes[id].text+'"?'))delNode(id);return;}
+  e.stopPropagation();
+  const n=S.nodes[id],cp=s2c(e.clientX,e.clientY);
+  dragging={id,ox:cp.x-n.x,oy:cp.y-n.y};
+  document.getElementById('nd-'+id).classList.add('drag');
+}
+
+cw.addEventListener('mousedown',e=>{
+  if(e.button!==0||dragging)return;
+  panning={sx:e.clientX-S.cam.x,sy:e.clientY-S.cam.y};
+});
+
+document.addEventListener('mousemove',e=>{
+  if(dragging){
+    const cp=s2c(e.clientX,e.clientY);const n=S.nodes[dragging.id];
+    n.x=cp.x-dragging.ox;n.y=cp.y-dragging.oy;
+    const el=document.getElementById('nd-'+dragging.id);
+    if(el){el.style.left=n.x+'px';el.style.top=n.y+'px';}
+    renderArrows();
+  }else if(panning){
+    S.cam.x=e.clientX-panning.sx;S.cam.y=e.clientY-panning.sy;applyCamera();
+  }
+});
+
+document.addEventListener('mouseup',()=>{
+  if(dragging){document.getElementById('nd-'+dragging.id)?.classList.remove('drag');dragging=null;persist();}
+  if(panning){panning=null;persist();}
+});
+
+cw.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const f=e.deltaY>0?.92:1.08;
+  const ns=Math.min(4,Math.max(.15,S.cam.scale*f));
+  const rect=cw.getBoundingClientRect();
+  const mx=e.clientX-rect.left,my=e.clientY-rect.top;
+  S.cam.x=mx-(mx-S.cam.x)*(ns/S.cam.scale);
+  S.cam.y=my-(my-S.cam.y)*(ns/S.cam.scale);
+  S.cam.scale=ns;applyCamera();
+},{passive:false});
+
+// ══════════════════════════════════════════════════
+//  DRAG (TOUCH)  — long press 280ms to start drag
+// ══════════════════════════════════════════════════
+let lpTimer=null,lpId=null,lpTx=0,lpTy=0;
+let pinch=null;// {dist, mx, my}
+let tapId=null;// for connect/delete tap
+
+function onTS(e,id){
+  // FIX v3: if tapping a button/input/editable, let native events handle it — don't start long press
+  const tg=e.target;
+  if(tg.tagName==='BUTTON'||tg.tagName==='INPUT'||tg.contentEditable==='true'){return;}
+  e.stopPropagation();
+  const t=e.touches[0];
+  lpTx=t.clientX;lpTy=t.clientY;
+  tapId=id;
+
+  if(mode==='conn'||mode==='del')return;// handle on touchend
+
+  lpId=id;
+  lpTimer=setTimeout(()=>{
+    lpTimer=null;
+    if(navigator.vibrate)navigator.vibrate(35);
+    const n=S.nodes[id];const cp=s2c(lpTx,lpTy);
+    dragging={id,ox:cp.x-n.x,oy:cp.y-n.y};
+    document.getElementById('nd-'+id).classList.add('drag');
+  },280);
+}
+
+function onTE(e,id){
+  // FIX v3: if user tapped a button/input, don't preventDefault — let native click fire
+  const tg=e.target;
+  if(tg.tagName==='BUTTON'||tg.tagName==='INPUT'){
+    if(lpTimer){clearTimeout(lpTimer);lpTimer=null;}
+    return;
+  }
+  e.preventDefault();
+  if(lpTimer){clearTimeout(lpTimer);lpTimer=null;}
+  if(mode==='conn'){connectClick(id);return;}
+  if(mode==='del'){if(confirm('Удалить "'+S.nodes[id].text+'"?'))delNode(id);return;}
+}
+
+// Touch move on document (for drag & pan)
+document.addEventListener('touchstart',e=>{
+  if(e.touches.length===2&&!dragging){
+    // Pinch
+    if(lpTimer){clearTimeout(lpTimer);lpTimer=null;}
+    const t1=e.touches[0],t2=e.touches[1];
+    const dx=t1.clientX-t2.clientX,dy=t1.clientY-t2.clientY;
+    pinch={dist:Math.sqrt(dx*dx+dy*dy),mx:(t1.clientX+t2.clientX)/2,my:(t1.clientY+t2.clientY)/2};
+    panning=null;return;
+  }
+  if(e.target===cw||e.target===cv||e.target.id==='svg'||e.target.id==='ag'){
+    const t=e.touches[0];
+    panning={sx:t.clientX-S.cam.x,sy:t.clientY-S.cam.y};
+  }
+},{passive:true});
+
+document.addEventListener('touchmove',e=>{
+  if(e.touches.length===2&&pinch){
+    e.preventDefault();
+    const t1=e.touches[0],t2=e.touches[1];
+    const dx=t1.clientX-t2.clientX,dy=t1.clientY-t2.clientY;
+    const newDist=Math.sqrt(dx*dx+dy*dy);
+    const f=newDist/pinch.dist;
+    const ns=Math.min(5,Math.max(.1,S.cam.scale*f));
+    const mx=pinch.mx,my=pinch.my-50;
+    S.cam.x=mx-(mx-S.cam.x)*(ns/S.cam.scale);
+    S.cam.y=my-(my-S.cam.y)*(ns/S.cam.scale);
+    S.cam.scale=ns;pinch.dist=newDist;applyCamera();return;
+  }
+  const t=e.touches[0];
+  if(dragging){
+    e.preventDefault();
+    // Cancel lpTimer if moved too much
+    const dx=t.clientX-lpTx,dy=t.clientY-lpTy;
+    lpTx=t.clientX;lpTy=t.clientY;
+    const cp=s2c(t.clientX,t.clientY);
+    const n=S.nodes[dragging.id];
+    n.x=cp.x-dragging.ox;n.y=cp.y-dragging.oy;
+    const el=document.getElementById('nd-'+dragging.id);
+    if(el){el.style.left=n.x+'px';el.style.top=n.y+'px';}
+    renderArrows();
+  }else if(panning){
+    e.preventDefault();
+    // If lpTimer is active and user moved > 8px, cancel it (they're panning)
+    if(lpTimer){
+      const dx=t.clientX-lpTx,dy=t.clientY-lpTy;
+      if(Math.sqrt(dx*dx+dy*dy)>8){clearTimeout(lpTimer);lpTimer=null;lpId=null;}
+    }
+    S.cam.x=t.clientX-panning.sx;S.cam.y=t.clientY-panning.sy;applyCamera();
+  }
+},{passive:false});
+
+document.addEventListener('touchend',e=>{
+  pinch=null;
+  if(lpTimer){clearTimeout(lpTimer);lpTimer=null;}
+  if(dragging){document.getElementById('nd-'+dragging.id)?.classList.remove('drag');dragging=null;persist();}
+  if(panning){panning=null;persist();}
+},{passive:true});
+
+// ══════════════════════════════════════════════════
+//  MODE
+// ══════════════════════════════════════════════════
+let mode='nav';
+let connSrc=null;
+
+function setMode(m){
+  mode=m;
+  if(connSrc){document.getElementById('nd-'+connSrc)?.classList.remove('cs');connSrc=null;}
+  document.getElementById('bConn').classList.toggle('on',m==='conn');
+  document.getElementById('bDel').classList.toggle('on',m==='del');
+  const b=document.getElementById('mode-badge');
+  const ls={nav:'НАВ',conn:'СТРЕЛКА',del:'УДАЛИТЬ'};
+  b.textContent=ls[m];b.className=m==='conn'?'c':m==='del'?'d':'';
+}
+
+function connectClick(id){
+  if(!connSrc){
+    connSrc=id;document.getElementById('nd-'+id)?.classList.add('cs');
+    document.getElementById('mode-badge').textContent='→ ЦЕЛЬ';
+  }else{
+    if(connSrc!==id&&!S.conns.find(c=>c.from===connSrc&&c.to===id)){
+      S.conns.push({id:gid('c'),from:connSrc,to:id});persist();
+    }
+    document.getElementById('nd-'+connSrc)?.classList.remove('cs');
+    connSrc=null;setMode('nav');renderAll();
+  }
+}
+
+function delNode(id){
+  const n=S.nodes[id];if(n?.tableId)delete S.tables[n.tableId];
+  delete S.nodes[id];S.conns=S.conns.filter(c=>c.from!==id&&c.to!==id);
+  persist();renderAll();
+}
+
+// ══════════════════════════════════════════════════
+//  STATUS
+// ══════════════════════════════════════════════════
+function updateStatus(){
+  document.getElementById('sn').textContent=Object.keys(S.nodes).length;
+  document.getElementById('sa').textContent=S.conns.length;
+  document.getElementById('st').textContent=Object.keys(S.tables).length;
+}
+
+// ══════════════════════════════════════════════════
+//  MODAL HELPER
+// ══════════════════════════════════════════════════
+function modal(html,setup){
+  const ov=document.createElement('div');ov.className='ov';
+  ov.innerHTML='<div class="modal">'+html+'</div>';
+  document.body.appendChild(ov);
+  ov.addEventListener('click',e=>{if(e.target===ov)ov.remove();});
+  if(setup)setup(ov);
+  setTimeout(()=>{const inp=ov.querySelector('input[type=text],input[type=number]');if(inp)inp.focus();},80);
+  return ov;
+}
+
+// ══════════════════════════════════════════════════
+//  ADD NODE
+// ══════════════════════════════════════════════════
+document.getElementById('bAdd').addEventListener('click',()=>{
+  const cp=s2c(cw.offsetWidth/2,cw.offsetHeight/2);
+  const pos=smartPlace(cp.x-80,cp.y-40);
+  const id=gid('n');
+  S.nodes[id]={id,x:pos.x,y:pos.y,text:'Новая рамка',type:'node',tableId:null,checkboxes:[]};
+  persist();renderAll();
+});
+
+// ══════════════════════════════════════════════════
+//  TABLE
+// ══════════════════════════════════════════════════
+document.getElementById('bTbl').addEventListener('click',()=>{
+  modal(`
+    <h2>📅 <span>Новая таблица привычек</span></h2>
+    <div class="f"><label>Название таблицы</label>
+      <input type="text" id="tn" placeholder="Ежедневные упражнения"></div>
+    <div class="f"><label>Столбцы привычек через запятую</label>
+      <input type="text" id="tt" placeholder="Зарядка, Чтение, Вода"></div>
+    <div class="brow">
+      <button class="mbtn cancel" id="tc">Отмена</button>
+      <button class="mbtn ok" id="tok">Создать</button>
+    </div>`,ov=>{
+    ov.querySelector('#tc').onclick=()=>ov.remove();
+    ov.querySelector('#tok').onclick=()=>{
+      const name=ov.querySelector('#tn').value.trim()||'Таблица';
+      const raw=ov.querySelector('#tt').value.trim();
+      const tasks=raw?raw.split(',').map(s=>({id:gid('tk'),name:s.trim()})):[{id:gid('tk'),name:'Выполнено'}];
+      const tid=gid('tbl');S.tables[tid]={id:tid,name,tasks,entries:{}};
+      const cp=s2c(cw.offsetWidth/2,cw.offsetHeight/2);
+      const pos=smartPlace(cp.x-80,cp.y-40);
+      const nid=gid('n');
+      S.nodes[nid]={id:nid,x:pos.x,y:pos.y,text:name,type:'table',tableId:tid,checkboxes:[]};
+      persist();renderAll();ov.remove();
+    };
+  });
+});
+
+function openTable(tid){
+  const tbl=S.tables[tid];if(!tbl)return;
+  const str=streak(tid);
+  const nid=Object.keys(S.nodes).find(id=>S.nodes[id].tableId===tid);
+  const total=nid?nodeVal(nid):0;
+  const DAYS=730;// 2 years
+  const dates=[];const now=new Date();
+  for(let i=0;i<DAYS;i++){const d=new Date(now);d.setDate(d.getDate()-i);dates.push(localKey(d));}
+  dates.forEach(k=>{if(!tbl.entries[k])tbl.entries[k]={};});
+
+  const todK=todayKey();
+  let thead='<th class="dth">Дата</th>';
+  tbl.tasks.forEach(tk=>{thead+='<th>'+tk.name+'</th>';});
+  let rows='';
+  dates.forEach(dk=>{
+    const isTd=dk===todK;
+    const d=new Date(dk+'T12:00');
+    const lbl=d.toLocaleDateString('ru-RU',{day:'numeric',month:'short',year:'numeric',weekday:'short'});
+    rows+=`<tr class="${isTd?'today':''}"><td class="dtd">${lbl}${isTd?' ◀':''}</td>`;
+    tbl.tasks.forEach(tk=>{
+      const chk=tbl.entries[dk][tk.id]||false;
+      rows+=`<td><input type="checkbox" data-d="${dk}" data-t="${tk.id}" ${chk?'checked':''}></td>`;
+    });
+    rows+='</tr>';
+  });
+
+  const ov=modal(`
+    <h2>📅 <span>${tbl.name}</span></h2>
+    <div class="sbar">
+      <div><div class="sv">🔥 ${str}</div><div class="sl">дней подряд</div></div>
+      <div class="tv">Всего отмечено:<br><b>${total}</b> раз</div>
+    </div>
+    <div class="tscroll"><table><thead><tr>${thead}</tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="atrow">
+      <input type="text" id="ntkn" placeholder="Название нового столбца…">
+      <button id="atk">＋ Столбец</button>
+    </div>
+    <div class="brow" style="margin-top:12px">
+      <button class="mbtn cancel" id="tclose">Закрыть</button>
+    </div>`,ov=>{
+    // Scroll table to top (today is first row)
+    const scroll=ov.querySelector('.tscroll');
+    if(scroll)setTimeout(()=>{scroll.scrollTop=0;},50);
+
+    ov.querySelectorAll('[data-d]').forEach(cb=>{
+      cb.addEventListener('change',()=>{
+        const dk=cb.dataset.d,tk=cb.dataset.t;
+        if(!tbl.entries[dk])tbl.entries[dk]={};
+        tbl.entries[dk][tk]=cb.checked;persist();renderAll();
+      });
+    });
+    ov.querySelector('#tclose').onclick=()=>ov.remove();
+    ov.querySelector('#atk').onclick=()=>{
+      const nm=ov.querySelector('#ntkn').value.trim();if(!nm)return;
+      tbl.tasks.push({id:gid('tk'),name:nm});persist();ov.remove();openTable(tid);
+    };
+  });
+}
+
+// ══════════════════════════════════════════════════
+//  ACHIEVEMENTS
+// ══════════════════════════════════════════════════
+function nodeOpts(sel){
+  const opts=Object.values(S.nodes).map(n=>`<option value="${n.id}"${n.id===sel?' selected':''}>${n.text}</option>`).join('');
+  return opts||'<option value="">— нет рамок —</option>';
+}
+function tableOpts(sel){
+  const opts=Object.values(S.tables).map(t=>`<option value="${t.id}"${t.id===sel?' selected':''}>${t.name}</option>`).join('');
+  return opts||'<option value="">— нет таблиц —</option>';
+}
+
+document.getElementById('bAch').addEventListener('click',()=>{
+  modal(`
+    <h2>🏆 <span>Новая награда</span></h2>
+    <div class="f"><label>Текст награды</label>
+      <input type="text" id="at" placeholder="7 дней подряд!"></div>
+    <div class="f"><label>Иконка</label>
+      <select id="ai">
+        <option value="🏆">🏆 Кубок</option><option value="🥇">🥇 Медаль</option>
+        <option value="⭐">⭐ Звезда</option><option value="✅">✅ Галочка</option>
+        <option value="🎯">🎯 Цель</option><option value="🔥">🔥 Огонь</option>
+        <option value="💎">💎 Алмаз</option>
+      </select></div>
+    <div class="f"><label>Условие</label>
+      <select id="atype">
+        <option value="node">Число рамки больше порога</option>
+        <option value="streak">Серия дней в таблице больше порога</option>
+      </select></div>
+    <div class="f" id="anf"><label>Рамка</label><select id="an">${nodeOpts('')}</select></div>
+    <div class="f" id="atf" style="display:none"><label>Таблица</label><select id="atbl">${tableOpts('')}</select></div>
+    <div class="f"><label>Пороговое значение (нужно быть строго больше)</label>
+      <input type="number" id="athr" value="0" min="0"></div>
+    <div class="brow">
+      <button class="mbtn cancel" id="ac">Отмена</button>
+      <button class="mbtn ok" id="aok">Создать</button>
+    </div>`,ov=>{
+    const ts=ov.querySelector('#atype');
+    const nf=ov.querySelector('#anf'),tf=ov.querySelector('#atf');
+    ts.onchange=()=>{nf.style.display=ts.value==='node'?'':'none';tf.style.display=ts.value==='streak'?'':'none';};
+    ov.querySelector('#ac').onclick=()=>ov.remove();
+    ov.querySelector('#aok').onclick=()=>{
+      try{
+        const type=ts.value;
+        const nsel=ov.querySelector('#an');
+        const tsel=ov.querySelector('#atbl');
+        S.achiev.push({
+          id:gid('a'),
+          text:ov.querySelector('#at').value.trim()||'Достижение',
+          icon:ov.querySelector('#ai').value,
+          cond:{
+            type,
+            nodeId:type==='node'&&nsel?nsel.value:null,
+            tableId:type==='streak'&&tsel?tsel.value:null,
+            threshold:parseInt(ov.querySelector('#athr').value)||0
+          }
+        });
+        persist();
+      }catch(e){console.error(e);}
+      ov.remove();
+    };
+  });
+});
+
+function achEarned(a){
+  try{
+    if(a.cond.type==='node')return nodeVal(a.cond.nodeId)>a.cond.threshold;
+    if(a.cond.type==='streak')return streak(a.cond.tableId)>a.cond.threshold;
+  }catch(e){}
+  return false;
+}
+
+document.getElementById('bAchV').addEventListener('click',()=>{
+  const items=S.achiev.length
+    ?S.achiev.map(a=>{const e=achEarned(a);return`
+      <div class="ai ${e?'earned':'locked'}">
+        <div class="aico">${e?a.icon:'🔒'}</div>
+        <div class="ainfo"><b>${a.text}</b><small>${e?'✅ Получено!':'⏳ Ещё не выполнено'}</small></div>
+        <button class="adel" data-id="${a.id}">✕</button>
+      </div>`;}).join('')
+    :'<p style="color:var(--txt2);font-size:13px">Нет наград. Нажмите «🏆 Награда» для добавления.</p>';
+  modal(`<h2>🏅 <span>Мои награды</span></h2><div class="alist">${items}</div>
+    <div class="brow" style="margin-top:14px"><button class="mbtn cancel" id="avc">Закрыть</button></div>`,ov=>{
+    ov.querySelector('#avc').onclick=()=>ov.remove();
+    ov.querySelectorAll('.adel').forEach(b=>{
+      b.onclick=()=>{S.achiev=S.achiev.filter(a=>a.id!==b.dataset.id);persist();ov.remove();};
+    });
+  });
+});
+
+
+// ══════════════════════════════════════════════════
+//  ГЕЙМИФИКАЦИЯ v5: ЛИГИ, ШТРАФЫ, ГОНКА, СУНДУКИ, КОЛЛЕКЦИЯ
+// ══════════════════════════════════════════════════
+const EMOJI_POOL=[
+{id:'c001',e:'🍎',r:'common'},
+{id:'c002',e:'🍌',r:'common'},
+{id:'c003',e:'🍇',r:'common'},
+{id:'c004',e:'🍉',r:'common'},
+{id:'c005',e:'🍓',r:'common'},
+{id:'c006',e:'🍒',r:'common'},
+{id:'c007',e:'🍑',r:'common'},
+{id:'c008',e:'🥝',r:'common'},
+{id:'c009',e:'🍍',r:'common'},
+{id:'c010',e:'🥥',r:'common'},
+{id:'c011',e:'🥑',r:'common'},
+{id:'c012',e:'🍅',r:'common'},
+{id:'c013',e:'🥕',r:'common'},
+{id:'c014',e:'🌽',r:'common'},
+{id:'c015',e:'🥔',r:'common'},
+{id:'c016',e:'🍠',r:'common'},
+{id:'c017',e:'🥐',r:'common'},
+{id:'c018',e:'🍞',r:'common'},
+{id:'c019',e:'🥖',r:'common'},
+{id:'c020',e:'🥨',r:'common'},
+{id:'c021',e:'🧀',r:'common'},
+{id:'c022',e:'🥚',r:'common'},
+{id:'c023',e:'🍳',r:'common'},
+{id:'c024',e:'🥞',r:'common'},
+{id:'c025',e:'🧇',r:'common'},
+{id:'c026',e:'🥓',r:'common'},
+{id:'c027',e:'🥩',r:'common'},
+{id:'c028',e:'🍗',r:'common'},
+{id:'c029',e:'🍖',r:'common'},
+{id:'c030',e:'🌭',r:'common'},
+{id:'c031',e:'🍔',r:'common'},
+{id:'c032',e:'🍟',r:'common'},
+{id:'c033',e:'🍕',r:'common'},
+{id:'c034',e:'🥪',r:'common'},
+{id:'c035',e:'🌮',r:'common'},
+{id:'c036',e:'🌯',r:'common'},
+{id:'c037',e:'🥙',r:'common'},
+{id:'c038',e:'🧆',r:'common'},
+{id:'c039',e:'🥘',r:'common'},
+{id:'c040',e:'🍲',r:'common'},
+{id:'c041',e:'🍛',r:'common'},
+{id:'c042',e:'🍣',r:'common'},
+{id:'c043',e:'🍱',r:'common'},
+{id:'c044',e:'🍜',r:'common'},
+{id:'c045',e:'🍝',r:'common'},
+{id:'c046',e:'🍢',r:'common'},
+{id:'c047',e:'🍡',r:'common'},
+{id:'c048',e:'🍧',r:'common'},
+{id:'c049',e:'🍨',r:'common'},
+{id:'c050',e:'🍦',r:'common'},
+{id:'c051',e:'🥧',r:'common'},
+{id:'c052',e:'🍰',r:'common'},
+{id:'c053',e:'🎂',r:'common'},
+{id:'c054',e:'🍮',r:'common'},
+{id:'c055',e:'🍭',r:'common'},
+{id:'c056',e:'🍬',r:'common'},
+{id:'c057',e:'🍫',r:'common'},
+{id:'c058',e:'🍿',r:'common'},
+{id:'c059',e:'🧂',r:'common'},
+{id:'c060',e:'🥤',r:'common'},
+{id:'c061',e:'🍵',r:'common'},
+{id:'c062',e:'🍺',r:'common'},
+{id:'c063',e:'🍷',r:'common'},
+{id:'c064',e:'🍹',r:'common'},
+{id:'c065',e:'🍸',r:'common'},
+{id:'c066',e:'🥃',r:'common'},
+{id:'c067',e:'🐶',r:'common'},
+{id:'c068',e:'🐱',r:'common'},
+{id:'c069',e:'🐭',r:'common'},
+{id:'c070',e:'🐹',r:'common'},
+{id:'c071',e:'🐰',r:'common'},
+{id:'c072',e:'🦊',r:'common'},
+{id:'c073',e:'🐻',r:'common'},
+{id:'c074',e:'🐼',r:'common'},
+{id:'c075',e:'🐨',r:'common'},
+{id:'c076',e:'🐯',r:'common'},
+{id:'c077',e:'🦁',r:'common'},
+{id:'c078',e:'🐮',r:'common'},
+{id:'c079',e:'🐷',r:'common'},
+{id:'c080',e:'🐸',r:'common'},
+{id:'c081',e:'🐵',r:'common'},
+{id:'c082',e:'🙈',r:'common'},
+{id:'c083',e:'🙉',r:'common'},
+{id:'c084',e:'🙊',r:'common'},
+{id:'c085',e:'🐒',r:'common'},
+{id:'c086',e:'🐔',r:'common'},
+{id:'c087',e:'🐧',r:'common'},
+{id:'c088',e:'🐦',r:'common'},
+{id:'c089',e:'🐤',r:'common'},
+{id:'c090',e:'🐣',r:'common'},
+{id:'c091',e:'🐥',r:'common'},
+{id:'c092',e:'🦆',r:'common'},
+{id:'c093',e:'🦅',r:'common'},
+{id:'c094',e:'🦉',r:'common'},
+{id:'c095',e:'🦇',r:'common'},
+{id:'c096',e:'🐺',r:'common'},
+{id:'c097',e:'🐗',r:'common'},
+{id:'c098',e:'🐴',r:'common'},
+{id:'c099',e:'🐝',r:'common'},
+{id:'c100',e:'🐛',r:'common'},
+{id:'c101',e:'🦋',r:'common'},
+{id:'c102',e:'🐌',r:'common'},
+{id:'c103',e:'🐞',r:'common'},
+{id:'c104',e:'🐜',r:'common'},
+{id:'c105',e:'🦗',r:'common'},
+{id:'c106',e:'🕷',r:'common'},
+{id:'c107',e:'🐢',r:'common'},
+{id:'c108',e:'🐍',r:'common'},
+{id:'c109',e:'🦎',r:'common'},
+{id:'c110',e:'🦂',r:'common'},
+{id:'c111',e:'🦀',r:'common'},
+{id:'c112',e:'🐙',r:'common'},
+{id:'c113',e:'🦑',r:'common'},
+{id:'c114',e:'🦐',r:'common'},
+{id:'c115',e:'🦞',r:'common'},
+{id:'c116',e:'🐠',r:'common'},
+{id:'c117',e:'🐟',r:'common'},
+{id:'c118',e:'🐡',r:'common'},
+{id:'c119',e:'🐬',r:'common'},
+{id:'c120',e:'🐳',r:'common'},
+{id:'c121',e:'🐋',r:'common'},
+{id:'c122',e:'🦈',r:'common'},
+{id:'c123',e:'🐊',r:'common'},
+{id:'c124',e:'🐘',r:'common'},
+{id:'c125',e:'🦏',r:'common'},
+{id:'c126',e:'🦛',r:'common'},
+{id:'c127',e:'🐪',r:'common'},
+{id:'c128',e:'🐫',r:'common'},
+{id:'c129',e:'🦙',r:'common'},
+{id:'c130',e:'🦒',r:'common'},
+{id:'c131',e:'🦘',r:'common'},
+{id:'c132',e:'🐃',r:'common'},
+{id:'c133',e:'🐂',r:'common'},
+{id:'c134',e:'🐄',r:'common'},
+{id:'c135',e:'🐎',r:'common'},
+{id:'c136',e:'🐖',r:'common'},
+{id:'c137',e:'🐑',r:'common'},
+{id:'c138',e:'🐐',r:'common'},
+{id:'c139',e:'🦌',r:'common'},
+{id:'c140',e:'🐕',r:'common'},
+{id:'c141',e:'🐩',r:'common'},
+{id:'c142',e:'🦮',r:'common'},
+{id:'c143',e:'🐈',r:'common'},
+{id:'c144',e:'🐓',r:'common'},
+{id:'c145',e:'🦃',r:'common'},
+{id:'c146',e:'🦢',r:'common'},
+{id:'c147',e:'🦩',r:'common'},
+{id:'c148',e:'🕊',r:'common'},
+{id:'c149',e:'🐇',r:'common'},
+{id:'c150',e:'🦝',r:'common'},
+{id:'c151',e:'🦨',r:'common'},
+{id:'c152',e:'🦡',r:'common'},
+{id:'c153',e:'🦦',r:'common'},
+{id:'c154',e:'🦥',r:'common'},
+{id:'c155',e:'🐁',r:'common'},
+{id:'c156',e:'🐀',r:'common'},
+{id:'c157',e:'🐿',r:'common'},
+{id:'c158',e:'🦔',r:'common'},
+{id:'c159',e:'🚗',r:'common'},
+{id:'c160',e:'🚕',r:'common'},
+{id:'c161',e:'🚙',r:'common'},
+{id:'c162',e:'🚌',r:'common'},
+{id:'c163',e:'🚎',r:'common'},
+{id:'c164',e:'🏎',r:'common'},
+{id:'c165',e:'🚓',r:'common'},
+{id:'c166',e:'🚑',r:'common'},
+{id:'c167',e:'🚒',r:'common'},
+{id:'c168',e:'🚐',r:'common'},
+{id:'c169',e:'🚚',r:'common'},
+{id:'c170',e:'🚛',r:'common'},
+{id:'c171',e:'🚜',r:'common'},
+{id:'c172',e:'🛵',r:'common'},
+{id:'c173',e:'🏍',r:'common'},
+{id:'c174',e:'🚲',r:'common'},
+{id:'c175',e:'🛴',r:'common'},
+{id:'c176',e:'🚂',r:'common'},
+{id:'c177',e:'🚆',r:'common'},
+{id:'c178',e:'🚇',r:'common'},
+{id:'c179',e:'🚈',r:'common'},
+{id:'c180',e:'🚝',r:'common'},
+{id:'c181',e:'🚞',r:'common'},
+{id:'c182',e:'🚋',r:'common'},
+{id:'c183',e:'🚃',r:'common'},
+{id:'c184',e:'🚖',r:'common'},
+{id:'c185',e:'🚡',r:'common'},
+{id:'c186',e:'🚠',r:'common'},
+{id:'c187',e:'🚟',r:'common'},
+{id:'c188',e:'🛩',r:'common'},
+{id:'c189',e:'✈',r:'common'},
+{id:'c190',e:'🛫',r:'common'},
+{id:'c191',e:'🛬',r:'common'},
+{id:'c192',e:'🪂',r:'common'},
+{id:'c193',e:'💺',r:'common'},
+{id:'c194',e:'⚽',r:'common'},
+{id:'c195',e:'🏀',r:'common'},
+{id:'c196',e:'🏈',r:'common'},
+{id:'c197',e:'⚾',r:'common'},
+{id:'c198',e:'🥎',r:'common'},
+{id:'c199',e:'🎾',r:'common'},
+{id:'c200',e:'🏐',r:'common'},
+{id:'c201',e:'🏉',r:'common'},
+{id:'c202',e:'🎱',r:'common'},
+{id:'c203',e:'🪀',r:'common'},
+{id:'c204',e:'🏓',r:'common'},
+{id:'c205',e:'🏸',r:'common'},
+{id:'c206',e:'🏒',r:'common'},
+{id:'c207',e:'🏑',r:'common'},
+{id:'c208',e:'🥍',r:'common'},
+{id:'c209',e:'🏏',r:'common'},
+{id:'c210',e:'🥊',r:'common'},
+{id:'c211',e:'🥋',r:'common'},
+{id:'c212',e:'🎽',r:'common'},
+{id:'c213',e:'⛳',r:'common'},
+{id:'c214',e:'🏹',r:'common'},
+{id:'c215',e:'🎣',r:'common'},
+{id:'c216',e:'🤿',r:'common'},
+{id:'c217',e:'🥌',r:'common'},
+{id:'c218',e:'🛷',r:'common'},
+{id:'c219',e:'🛹',r:'common'},
+{id:'c220',e:'🛼',r:'common'},
+{id:'c221',e:'🎳',r:'common'},
+{id:'c222',e:'📱',r:'common'},
+{id:'c223',e:'💻',r:'common'},
+{id:'c224',e:'⌨',r:'common'},
+{id:'c225',e:'🖥',r:'common'},
+{id:'c226',e:'🖨',r:'common'},
+{id:'c227',e:'🖱',r:'common'},
+{id:'c228',e:'🕹',r:'common'},
+{id:'c229',e:'💾',r:'common'},
+{id:'c230',e:'💿',r:'common'},
+{id:'c231',e:'📀',r:'common'},
+{id:'c232',e:'📷',r:'common'},
+{id:'c233',e:'📸',r:'common'},
+{id:'c234',e:'📹',r:'common'},
+{id:'c235',e:'🎥',r:'common'},
+{id:'c236',e:'📞',r:'common'},
+{id:'c237',e:'☎',r:'common'},
+{id:'c238',e:'📟',r:'common'},
+{id:'c239',e:'📠',r:'common'},
+{id:'c240',e:'📺',r:'common'},
+{id:'c241',e:'📻',r:'common'},
+{id:'c242',e:'🎙',r:'common'},
+{id:'c243',e:'🎚',r:'common'},
+{id:'c244',e:'🎛',r:'common'},
+{id:'c245',e:'⏰',r:'common'},
+{id:'c246',e:'⏱',r:'common'},
+{id:'c247',e:'⏲',r:'common'},
+{id:'c248',e:'🕰',r:'common'},
+{id:'c249',e:'⌛',r:'common'},
+{id:'c250',e:'⏳',r:'common'},
+{id:'c251',e:'📡',r:'common'},
+{id:'c252',e:'🔋',r:'common'},
+{id:'c253',e:'🔌',r:'common'},
+{id:'c254',e:'💡',r:'common'},
+{id:'c255',e:'🔦',r:'common'},
+{id:'c256',e:'🏮',r:'common'},
+{id:'c257',e:'🪔',r:'common'},
+{id:'c258',e:'📚',r:'common'},
+{id:'c259',e:'📖',r:'common'},
+{id:'c260',e:'📝',r:'common'},
+{id:'c261',e:'✏',r:'common'},
+{id:'c262',e:'✒',r:'common'},
+{id:'c263',e:'🖊',r:'common'},
+{id:'c264',e:'🖋',r:'common'},
+{id:'c265',e:'🖌',r:'common'},
+{id:'c266',e:'🖍',r:'common'},
+{id:'c267',e:'📏',r:'common'},
+{id:'c268',e:'📐',r:'common'},
+{id:'c269',e:'✂',r:'common'},
+{id:'c270',e:'🗃',r:'common'},
+{id:'c271',e:'🗄',r:'common'},
+{id:'c272',e:'🗑',r:'common'},
+{id:'c273',e:'🔒',r:'common'},
+{id:'c274',e:'🔓',r:'common'},
+{id:'c275',e:'🔏',r:'common'},
+{id:'c276',e:'🔐',r:'common'},
+{id:'c277',e:'🔑',r:'common'},
+{id:'c278',e:'🔨',r:'common'},
+{id:'c279',e:'⛏',r:'common'},
+{id:'c280',e:'⚒',r:'common'},
+{id:'c281',e:'🛠',r:'common'},
+{id:'c282',e:'🗡',r:'common'},
+{id:'c283',e:'🛡',r:'common'},
+{id:'c284',e:'🔧',r:'common'},
+{id:'c285',e:'🔩',r:'common'},
+{id:'c286',e:'⚙',r:'common'},
+{id:'c287',e:'🗜',r:'common'},
+{id:'c288',e:'⚖',r:'common'},
+{id:'c289',e:'🦯',r:'common'},
+{id:'c290',e:'🔗',r:'common'},
+{id:'c291',e:'⛓',r:'common'},
+{id:'c292',e:'🧰',r:'common'},
+{id:'c293',e:'🧲',r:'common'},
+{id:'c294',e:'🪜',r:'common'},
+{id:'c295',e:'☂',r:'common'},
+{id:'c296',e:'🧳',r:'common'},
+{id:'c297',e:'👓',r:'common'},
+{id:'c298',e:'🕶',r:'common'},
+{id:'c299',e:'🥽',r:'common'},
+{id:'c300',e:'👔',r:'common'},
+{id:'c301',e:'👕',r:'common'},
+{id:'c302',e:'👖',r:'common'},
+{id:'c303',e:'🧥',r:'common'},
+{id:'c304',e:'👗',r:'common'},
+{id:'c305',e:'👘',r:'common'},
+{id:'c306',e:'👙',r:'common'},
+{id:'c307',e:'👚',r:'common'},
+{id:'c308',e:'👛',r:'common'},
+{id:'c309',e:'👜',r:'common'},
+{id:'c310',e:'👝',r:'common'},
+{id:'c311',e:'🎒',r:'common'},
+{id:'c312',e:'👞',r:'common'},
+{id:'c313',e:'👟',r:'common'},
+{id:'c314',e:'🥾',r:'common'},
+{id:'c315',e:'🥿',r:'common'},
+{id:'c316',e:'👠',r:'common'},
+{id:'c317',e:'👡',r:'common'},
+{id:'c318',e:'🩰',r:'common'},
+{id:'c319',e:'👢',r:'common'},
+{id:'c320',e:'🧦',r:'common'},
+{id:'c321',e:'🧤',r:'common'},
+{id:'c322',e:'🧣',r:'common'},
+{id:'c323',e:'🎩',r:'common'},
+{id:'c324',e:'🧢',r:'common'},
+{id:'c325',e:'👒',r:'common'},
+{id:'c326',e:'🎓',r:'common'},
+{id:'c327',e:'⛑',r:'common'},
+{id:'r001',e:'🌈',r:'rare'},
+{id:'r002',e:'🌟',r:'rare'},
+{id:'r003',e:'⭐',r:'rare'},
+{id:'r004',e:'✨',r:'rare'},
+{id:'r005',e:'💫',r:'rare'},
+{id:'r006',e:'☀',r:'rare'},
+{id:'r007',e:'🌙',r:'rare'},
+{id:'r008',e:'⛅',r:'rare'},
+{id:'r009',e:'🌤',r:'rare'},
+{id:'r010',e:'🌦',r:'rare'},
+{id:'r011',e:'🌧',r:'rare'},
+{id:'r012',e:'⛈',r:'rare'},
+{id:'r013',e:'🌩',r:'rare'},
+{id:'r014',e:'🌨',r:'rare'},
+{id:'r015',e:'❄',r:'rare'},
+{id:'r016',e:'☔',r:'rare'},
+{id:'r017',e:'🌊',r:'rare'},
+{id:'r018',e:'🌪',r:'rare'},
+{id:'r019',e:'🌫',r:'rare'},
+{id:'r020',e:'🍀',r:'rare'},
+{id:'r021',e:'🌸',r:'rare'},
+{id:'r022',e:'🌺',r:'rare'},
+{id:'r023',e:'🌻',r:'rare'},
+{id:'r024',e:'🌼',r:'rare'},
+{id:'r025',e:'🌷',r:'rare'},
+{id:'r026',e:'🌹',r:'rare'},
+{id:'r027',e:'🥀',r:'rare'},
+{id:'r028',e:'🌾',r:'rare'},
+{id:'r029',e:'🌵',r:'rare'},
+{id:'r030',e:'🌴',r:'rare'},
+{id:'r031',e:'🌳',r:'rare'},
+{id:'r032',e:'🌲',r:'rare'},
+{id:'r033',e:'🍁',r:'rare'},
+{id:'r034',e:'🍂',r:'rare'},
+{id:'r035',e:'🍃',r:'rare'},
+{id:'r036',e:'🌍',r:'rare'},
+{id:'r037',e:'🌎',r:'rare'},
+{id:'r038',e:'🌏',r:'rare'},
+{id:'r039',e:'🪐',r:'rare'},
+{id:'r040',e:'🦚',r:'rare'},
+{id:'r041',e:'🦓',r:'rare'},
+{id:'r042',e:'🪶',r:'rare'},
+{id:'r043',e:'🪸',r:'rare'},
+{id:'r044',e:'🪺',r:'rare'},
+{id:'r045',e:'🫧',r:'rare'},
+{id:'r046',e:'🦭',r:'rare'},
+{id:'r047',e:'🦬',r:'rare'},
+{id:'r048',e:'🦫',r:'rare'},
+{id:'r049',e:'🪵',r:'rare'},
+{id:'r050',e:'🪻',r:'rare'},
+{id:'r051',e:'🪷',r:'rare'},
+{id:'r052',e:'🪹',r:'rare'},
+{id:'r053',e:'🍄',r:'rare'},
+{id:'r054',e:'🪴',r:'rare'},
+{id:'r055',e:'🪲',r:'rare'},
+{id:'r056',e:'🪱',r:'rare'},
+{id:'r057',e:'🐅',r:'rare'},
+{id:'r058',e:'🐆',r:'rare'},
+{id:'r059',e:'🌅',r:'rare'},
+{id:'r060',e:'🌄',r:'rare'},
+{id:'r061',e:'🌃',r:'rare'},
+{id:'r062',e:'🌆',r:'rare'},
+{id:'r063',e:'🌇',r:'rare'},
+{id:'r064',e:'🌉',r:'rare'},
+{id:'r065',e:'⛩',r:'rare'},
+{id:'r066',e:'🏯',r:'rare'},
+{id:'e001',e:'🎇',r:'epic'},
+{id:'e002',e:'🎆',r:'epic'},
+{id:'e003',e:'🏆',r:'epic'},
+{id:'e004',e:'💍',r:'epic'},
+{id:'e005',e:'🗝',r:'epic'},
+{id:'e006',e:'🪄',r:'epic'},
+{id:'e007',e:'🛰',r:'epic'},
+{id:'e008',e:'☄',r:'epic'},
+{id:'e009',e:'🌠',r:'epic'},
+{id:'e010',e:'🪅',r:'epic'},
+{id:'e011',e:'🎖',r:'epic'},
+{id:'e012',e:'🥇',r:'epic'},
+{id:'e013',e:'🥈',r:'epic'},
+{id:'e014',e:'🥉',r:'epic'},
+{id:'e015',e:'🎪',r:'epic'},
+{id:'e016',e:'🎡',r:'epic'},
+{id:'e017',e:'🎢',r:'epic'},
+{id:'e018',e:'🛕',r:'epic'},
+{id:'e019',e:'🕌',r:'epic'},
+{id:'e020',e:'🗽',r:'epic'},
+{id:'e021',e:'🗼',r:'epic'},
+{id:'e022',e:'🏰',r:'epic'},
+{id:'e023',e:'🏟',r:'epic'},
+{id:'e024',e:'🎠',r:'epic'},
+{id:'e025',e:'⛲',r:'epic'},
+{id:'e026',e:'🪩',r:'epic'},
+{id:'l001',e:'🌌',r:'legendary'},
+{id:'l002',e:'🐉',r:'legendary'},
+{id:'l003',e:'🐲',r:'legendary'},
+{id:'l004',e:'👑',r:'legendary'},
+{id:'l005',e:'💎',r:'legendary'},
+{id:'l006',e:'🔱',r:'legendary'},
+{id:'l007',e:'🔮',r:'legendary'},
+{id:'l008',e:'⚡',r:'legendary'},
+{id:'l009',e:'🦄',r:'legendary'},
+{id:'l010',e:'🧚',r:'legendary'},
+{id:'l011',e:'\u200d',r:'legendary'},
+{id:'l012',e:'♂',r:'legendary'},
+{id:'l013',e:'🧜',r:'legendary'},
+{id:'l014',e:'🚀',r:'legendary'},
+{id:'l015',e:'🛸',r:'legendary'},
+{id:'l016',e:'⚜',r:'legendary'},
+{id:'l017',e:'🧿',r:'legendary'},
+{id:'l018',e:'🌀',r:'legendary'},
+{id:'l019',e:'🦸',r:'legendary'},
+{id:'l020',e:'🦹',r:'legendary'},
+{id:'l021',e:'🧙',r:'legendary'},
+{id:'l022',e:'♀',r:'legendary'},
+{id:'l023',e:'🧞',r:'legendary'},
+{id:'l024',e:'🗿',r:'legendary'},
+{id:'l025',e:'🪬',r:'legendary'},
+{id:'l026',e:'🎴',r:'legendary'},
+{id:'l027',e:'🕉',r:'legendary'},
+{id:'l028',e:'👁',r:'legendary'},
+{id:'l029',e:'🔥',r:'legendary'},
+{id:'l030',e:'🧨',r:'legendary'},
+{id:'l031',e:'💠',r:'legendary'}
+];
+
+// ── Веса редкостей сундуков: Обычный 70% / Редкий 22% / Эпический 7% / Легендарный 1% ──
+const RARITY_ORDER=['common','rare','epic','legendary'];
+const RARITY_WEIGHTS={common:0.70,rare:0.22,epic:0.07,legendary:0.01};
+const RARITY_LABEL={common:'Обычный',rare:'Редкий',epic:'Эпический',legendary:'Легендарный'};
+/*
+  Расчёт темпа открытия коллекции (почему пул такой большой):
+  Пул содержит 450 эмодзи: ~327 обычных, ~66 редких, ~26 эпических, ~31 легендарный.
+  При активном ежедневном использовании (идеальный день + переходы лиг + стрики +
+  круглые числа) пользователь получает ориентировочно ~1.5 сундука в день, т.е. ~550/год.
+  Чтобы собрать ВСЕ легендарные предметы (задача "собирателя купонов"):
+  ожидаемое число открытий ≈ (L / p_legendary) × H(L), где L=31, p=0.01, H(31)≈4.0
+  → ≈ 31/0.01 × 4.0 ≈ 12 400 открытий ≈ 22+ года при ~550 открытий/год.
+  Обычные и редкие предметы собираются значительно раньше — это нормально и усиливает
+  "охоту" именно за легендарными под конец прогресса.
+*/
+
+// ══════════════════════════════════════════════════
+//  ЛИГИ
+// ══════════════════════════════════════════════════
+const LEAGUE_NAMES=['Семечко','Росток','Дерево','Камень','Бронза','Серебро','Золото','Платина','Изумруд','Сапфир','Рубин','Аметист','Обсидиан','Адамант','Мифрил','Орихалк','Эфир','Звезда','Галактика','Вселенная','Сингулярность'];
+const LEAGUE_ICONS=['🌰','🌱','🌳','🪨','🥉','🥈','🥇','💠','💚','💎','❤️','💜','⚫','🔶','⚙️','🟡','🌫️','⭐','🌌','🪐','♾️'];
+const LEAGUE_BASE=100, LEAGUE_GROWTH=1.35; // экспоненциальный рост требуемых очков
+
+function leagueThreshold(level){
+  if(level<=0)return 0;
+  const raw=LEAGUE_BASE*Math.pow(LEAGUE_GROWTH,level-1);
+  const digits=Math.max(0,Math.floor(Math.log10(raw))-1);
+  const mag=Math.pow(10,digits);
+  return Math.round(raw/mag)*mag;
+}
+function toRoman(num){
+  const vals=[[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];
+  let res='';for(const [v,s] of vals){while(num>=v){res+=s;num-=v;}}return res||'';
+}
+function leagueName(level){
+  if(level<=0)return LEAGUE_NAMES[0];
+  const n=LEAGUE_NAMES.length;
+  const cycle=Math.floor(level/n);
+  const base=LEAGUE_NAMES[level%n];
+  return cycle>0?base+' '+toRoman(cycle+1):base;
+}
+function leagueIcon(level){return LEAGUE_ICONS[level%LEAGUE_ICONS.length];}
+function levelForScore(score){
+  let lvl=0;
+  while(lvl<300&&leagueThreshold(lvl+1)<=score)lvl++;
+  return lvl;
+}
+function chestsForLevelUp(level){return Math.min(10,1+Math.floor(level/10));}
+
+// ══════════════════════════════════════════════════
+//  ДАТЫ
+// ══════════════════════════════════════════════════
+function ymdAddDays(key,delta){
+  const d=new Date(key+'T12:00:00');d.setDate(d.getDate()+delta);return localKey(d);
+}
+function daysSince(dateKey){
+  const start=new Date(dateKey+'T00:00:00');
+  const now=new Date(localKey(new Date())+'T00:00:00');
+  return Math.floor((now-start)/86400000)+1; // День 1 = день старта
+}
+
+// ══════════════════════════════════════════════════
+//  ШТРАФЫ ЗА ПРОПУЩЕННЫЕ ДНИ
+// ══════════════════════════════════════════════════
+function applyPenalty(){
+  const mainId=S.settings.mainNodeId;
+  const pen=S.settings.penalty||0;
+  if(!mainId||!S.nodes[mainId]||pen<=0)return;
+  const raw=nodeVal(mainId);
+  let newAccum=S.game.penaltyAccum+pen;
+  if(raw-newAccum<0)newAccum=raw; // очки не уходят в минус, только до 0
+  S.game.penaltyAccum=newAccum;
+}
+
+// ══════════════════════════════════════════════════
+//  ИДЕАЛЬНЫЙ ДЕНЬ
+// ══════════════════════════════════════════════════
+function checkPerfectDay(dateKey){
+  const tids=Object.keys(S.tables);
+  if(!tids.length)return false;
+  return tids.every(tid=>{
+    const t=S.tables[tid];
+    if(!t.tasks||!t.tasks.length)return true;
+    const day=t.entries[dateKey];
+    if(!day)return false;
+    return t.tasks.every(tk=>day[tk.id]);
+  });
+}
+
+// ══════════════════════════════════════════════════
+//  КОНКУРЕНТЫ И СЛУЧАЙНЫЕ СОБЫТИЯ
+// ══════════════════════════════════════════════════
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
+function competitorEventText(name,delta){
+  const pos=['получил','заработал','выиграл'];
+  const neg=['потерял','прокрастинировал и потерял','отвлёкся и упустил'];
+  const posReason=['за инновацию','на тренировке','за упорство','на экзамене','за дисциплину'];
+  const negReason=['из-за лени','проспав важное','забыв про привычки','на отвлечениях'];
+  return delta>=0
+    ?'⚔️ '+name+' '+pick(pos)+' +'+delta+' очков '+pick(posReason)
+    :'🛑 '+name+' '+pick(neg)+' '+Math.abs(delta)+' очков '+pick(negReason);
+}
+function rollCompetitorEvents(dateKey){
+  if(!S.game.competitors.length)return;
+  S.game.competitors.forEach(c=>{
+    if(Math.random()<0.5){
+      const min=S.settings.eventMin,max=S.settings.eventMax;
+      const delta=Math.round(min+Math.random()*(max-min));
+      c.eventTotal=(c.eventTotal||0)+delta;
+      S.game.eventLog.unshift({date:dateKey,text:competitorEventText(c.name,delta)});
+    }
+  });
+  if(S.game.eventLog.length>150)S.game.eventLog.length=150;
+}
+function competitorScore(c){
+  if(!S.game.startDate)return 0;
+  const days=daysSince(S.game.startDate);
+  return Math.round(days*c.rate+(c.eventTotal||0));
+}
+
+// ══════════════════════════════════════════════════
+//  ЕЖЕДНЕВНАЯ ДОГОНЯЮЩАЯ ПРОВЕРКА (запускается 1 раз при старте приложения)
+// ══════════════════════════════════════════════════
+function processMissedDay(dateKey){
+  const hasTables=Object.keys(S.tables).length>0;
+  const anyChecked=Object.values(S.tables).some(t=>{
+    const day=t.entries[dateKey];return day&&Object.values(day).some(Boolean);
+  });
+  if(hasTables&&!anyChecked)applyPenalty();
+  if(checkPerfectDay(dateKey)&&S.game.perfectDayDate!==dateKey){
+    S.game.perfectDayDate=dateKey;
+    grantChest('perfect:'+dateKey);
+  }
+  rollCompetitorEvents(dateKey);
+}
+function dailyTick(){
+  const today=todayKey();
+  if(!S.game.lastDailyCheck){
+    // Первый запуск v5: не наказываем за прошлое "до приложения", начинаем со вчера
+    S.game.lastDailyCheck=ymdAddDays(today,-1);
+    return;
+  }
+  let cursor=ymdAddDays(S.game.lastDailyCheck,1);
+  let guard=0;
+  while(cursor<today&&guard<3650){
+    processMissedDay(cursor);
+    S.game.lastDailyCheck=cursor;
+    cursor=ymdAddDays(cursor,1);
+    guard++;
+  }
+}
+
+// ══════════════════════════════════════════════════
+//  СУНДУКИ
+// ══════════════════════════════════════════════════
+function grantChest(reason){S.game.chests.push({id:gid('chest'),reason});}
+function chestReasonText(reason){
+  if(reason.startsWith('league:'))return '🎖 Переход в новую лигу';
+  if(reason.startsWith('round:'))return '💯 Круглое число очков: '+reason.split(':')[1];
+  if(reason.startsWith('streak:'))return '🔥 Стрик привычки: '+reason.split(':')[1]+' дней подряд';
+  if(reason.startsWith('perfect:'))return '✅ Идеальный день: '+reason.split(':')[1];
+  return '📦 Сундук';
+}
+function rollRarity(){
+  if(S.game.opensSinceLegendary>=199){S.game.opensSinceLegendary=0;return 'legendary';}
+  const r=Math.random();let acc=0;
+  for(const k of RARITY_ORDER){
+    acc+=RARITY_WEIGHTS[k];
+    if(r<=acc){
+      if(k==='legendary')S.game.opensSinceLegendary=0;else S.game.opensSinceLegendary++;
+      return k;
+    }
+  }
+  S.game.opensSinceLegendary++;return 'common';
+}
+function pickEmojiByRarity(rarity){
+  const pool=EMOJI_POOL.filter(e=>e.r===rarity);
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+function showChestOpenAnimation(item,rarity){
+  const ov=modal(`<h2>📦 <span>Открытие сундука…</span></h2>
+    <div class="chestbox"><div class="chest-emoji shaking">📦</div></div>`,()=>{});
+  setTimeout(()=>{
+    const box=ov.querySelector('.chestbox');
+    box.innerHTML=`
+      <div class="chest-reward">${item.e}</div>
+      <span class="rarity-tag ${rarity}">${RARITY_LABEL[rarity]}</span>
+      <div style="font-size:12px;color:var(--txt2)">В коллекции: ×${S.collection[item.id]}</div>
+      <div class="brow" style="margin-top:10px"><button class="mbtn ok" id="chestOk">Отлично!</button></div>`;
+    box.querySelector('#chestOk').onclick=()=>ov.remove();
+  },650);
+}
+function openChestById(chestId){
+  const idx=S.game.chests.findIndex(c=>c.id===chestId);
+  if(idx<0)return;
+  S.game.chests.splice(idx,1);
+  const rarity=rollRarity();
+  const item=pickEmojiByRarity(rarity);
+  S.collection[item.id]=(S.collection[item.id]||0)+1;
+  persist();
+  showChestOpenAnimation(item,rarity);
+}
+function renderChestsModal(){
+  const list=S.game.chests.length
+    ?S.game.chests.map(c=>`<div class="chest-list-item"><span class="ce">📦</span><span class="ci">${chestReasonText(c.reason)}</span><button class="mbtn ok" data-id="${c.id}" style="padding:6px 12px">Открыть</button></div>`).join('')
+    :'<p style="color:var(--txt2);font-size:13px">Нет сундуков. Выполняйте привычки, бейте стрики и поднимайтесь в лиге!</p>';
+  const ov=modal(`<h2>📦 <span>Сундуки (${S.game.chests.length})</span></h2>
+    <div>${list}</div>
+    <div class="pity-note">Пити-таймер: открытий без легендарного — ${S.game.opensSinceLegendary}/200</div>
+    <div class="brow" style="margin-top:12px"><button class="mbtn cancel" id="chClose">Закрыть</button></div>`,ovv=>{
+    ovv.querySelector('#chClose').onclick=()=>ovv.remove();
+    ovv.querySelectorAll('button[data-id]').forEach(b=>{
+      b.onclick=()=>{const id=b.dataset.id;ovv.remove();openChestById(id);};
+    });
+  });
+}
+
+// ══════════════════════════════════════════════════
+//  КОЛЛЕКЦИЯ
+// ══════════════════════════════════════════════════
+let collFilter='all';
+function renderCollectionModal(){
+  const owned=Object.keys(S.collection).filter(id=>S.collection[id]>0).length;
+  const total=EMOJI_POOL.length;
+  const tabs=['all','common','rare','epic','legendary'];
+  const tabLabels={all:'Все',common:'Обычные',rare:'Редкие',epic:'Эпические',legendary:'Легендарные'};
+  const filtered=EMOJI_POOL.filter(e=>collFilter==='all'||e.r===collFilter);
+  const slots=filtered.map(e=>{
+    const cnt=S.collection[e.id]||0;
+    return cnt>0
+      ?`<div class="collslot owned ${e.r}" title="${RARITY_LABEL[e.r]}">${e.e}<span class="cnt">×${cnt}</span></div>`
+      :`<div class="collslot locked" title="???">❓</div>`;
+  }).join('');
+  const ov=modal(`<h2>🎒 <span>Коллекция эмодзи</span></h2>
+    <div class="collstats">Собрано: <b>${owned}</b> / ${total}</div>
+    <div class="colltabs">${tabs.map(t=>`<button class="colltab ${t===collFilter?'on':''}" data-t="${t}">${tabLabels[t]}</button>`).join('')}</div>
+    <div class="collgrid">${slots}</div>
+    <div class="brow" style="margin-top:10px"><button class="mbtn cancel" id="collClose">Закрыть</button></div>`,ovv=>{
+    ovv.querySelector('#collClose').onclick=()=>ovv.remove();
+    ovv.querySelectorAll('.colltab').forEach(b=>{b.onclick=()=>{collFilter=b.dataset.t;ovv.remove();renderCollectionModal();};});
+  });
+}
+
+// ══════════════════════════════════════════════════
+//  ШКАЛА ПРОГРЕССА / ЛИГА (нижняя панель)
+// ══════════════════════════════════════════════════
+function renderLeagueBar(){
+  const mainId=S.settings.mainNodeId;
+  const hasMain=!!(mainId&&S.nodes[mainId]);
+  const raw=hasMain?nodeVal(mainId):0;
+  const eff=Math.max(0,raw-S.game.penaltyAccum);
+  const lvl=levelForScore(eff);
+  const cur=leagueThreshold(lvl),next=leagueThreshold(lvl+1);
+  const pct=next>cur?Math.min(100,Math.round((eff-cur)/(next-cur)*100)):100;
+  document.getElementById('lg-icon').textContent=hasMain?leagueIcon(lvl):'🌱';
+  document.getElementById('lg-name').textContent=hasMain?leagueName(lvl):'Выбрать рамку';
+  document.getElementById('lg-fill').style.width=(hasMain?pct:0)+'%';
+  document.getElementById('lg-pts').textContent=hasMain?(eff.toLocaleString('ru-RU')+' / '+next.toLocaleString('ru-RU')):'⚙ настройка';
+  const dayEl=document.getElementById('lg-day');
+  dayEl.textContent=S.game.startDate?('День '+daysSince(S.game.startDate)):'🏁 Старт';
+  const n=S.game.chests.length;
+  const badge=document.getElementById('lg-chest-n');
+  const chestEl=document.getElementById('lg-chest');
+  if(n>0){badge.style.display='block';badge.textContent=n>99?'99+':n;chestEl.classList.add('has');}
+  else{badge.style.display='none';chestEl.classList.remove('has');}
+}
+
+// ══════════════════════════════════════════════════
+//  АНИМАЦИЯ ПЕРЕХОДА В НОВУЮ ЛИГУ
+// ══════════════════════════════════════════════════
+function spawnConfetti(container){
+  const emojis=['🎉','✨','🎊','⭐','💥'];
+  for(let i=0;i<24;i++){
+    const s=document.createElement('span');s.className='confetti';
+    s.textContent=emojis[Math.floor(Math.random()*emojis.length)];
+    s.style.left=Math.random()*100+'%';
+    s.style.animationDuration=(1.2+Math.random()*1.4)+'s';
+    s.style.animationDelay=(Math.random()*0.4)+'s';
+    container.appendChild(s);setTimeout(()=>s.remove(),3000);
+  }
+}
+function showLevelUp(level,chestCount){
+  const ov=document.getElementById('levelup-ov');
+  document.getElementById('lu-icon').textContent=leagueIcon(level);
+  document.getElementById('lu-title').textContent='Новая лига: '+leagueName(level)+'!';
+  document.getElementById('lu-sub').textContent='Получено сундуков: '+chestCount;
+  ov.classList.add('show');
+  spawnConfetti(ov);
+  document.getElementById('lu-close').onclick=()=>{
+    ov.classList.remove('show');
+    ov.querySelectorAll('.confetti').forEach(c=>c.remove());
+  };
+}
+
+// ══════════════════════════════════════════════════
+//  ОСНОВНОЙ ХУК ПРОГРЕССА (вызывается из persist())
+// ══════════════════════════════════════════════════
+function recomputeProgress(){
+  let changed=false;
+  const mainId=S.settings.mainNodeId;
+  if(mainId&&S.nodes[mainId]){
+    const raw=nodeVal(mainId);
+    const eff=Math.max(0,raw-S.game.penaltyAccum);
+    const lvl=levelForScore(eff);
+    if(lvl>S.game.lastLeagueLevel){
+      const n=chestsForLevelUp(lvl);
+      for(let i=0;i<n;i++)grantChest('league:'+lvl);
+      S.game.lastLeagueLevel=lvl;changed=true;
+      showLevelUp(lvl,n);
+    }
+    let guard=0;
+    while(eff-S.game.grantedRoundScore>=100&&guard<1000){
+      S.game.grantedRoundScore+=100;grantChest('round:'+S.game.grantedRoundScore);
+      changed=true;guard++;
+    }
+  }
+  const milestones=[7,30,90,365];
+  Object.keys(S.tables).forEach(tid=>{
+    const str=streak(tid);
+    if(!S.game.grantedStreaks[tid])S.game.grantedStreaks[tid]=[];
+    milestones.forEach(m=>{
+      if(str>=m&&!S.game.grantedStreaks[tid].includes(m)){
+        S.game.grantedStreaks[tid].push(m);grantChest('streak:'+m);changed=true;
+      }
+    });
+  });
+  const tk=todayKey();
+  if(checkPerfectDay(tk)&&S.game.perfectDayDate!==tk){
+    S.game.perfectDayDate=tk;grantChest('perfect:'+tk);changed=true;
+  }
+  renderLeagueBar();
+  return changed;
+}
+
+// ══════════════════════════════════════════════════
+//  МОДАЛКИ: НАСТРОЙКИ / ГОНКА / ТАБЛИЦА ЛИГ
+// ══════════════════════════════════════════════════
+function renderSettingsModal(){
+  const syncIdVal=fbSyncId||getOrCreateSyncId();
+  const fbReady=!!FB_CONFIG.apiKey;
+  const ov=modal(`<h2>⚙ <span>Настройки геймификации</span></h2>
+    <div class="f"><label>Главная рамка (лига и штрафы считаются по ней)</label>
+      <select id="setMain">${nodeOpts(S.settings.mainNodeId)}</select></div>
+    <div class="setrow"><label>Штраф за пропущенный день</label><input type="number" id="setPen" value="${S.settings.penalty}" min="0"></div>
+    <div class="setrow"><label>Событие конкурентов: минимум</label><input type="number" id="setEvMin" value="${S.settings.eventMin}"></div>
+    <div class="setrow"><label>Событие конкурентов: максимум</label><input type="number" id="setEvMax" value="${S.settings.eventMax}"></div>
+    <p style="font-size:11px;color:var(--txt2);line-height:1.5;margin-top:6px">
+      Если день не отмечен ни в одной таблице привычек — при следующем заходе один раз вычитается
+      штраф (очки не уходят в минус, только до 0). У каждого конкурента раз в день может произойти
+      случайное событие в заданном диапазоне.
+    </p>
+    <div class="f" style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
+      <label>🔗 ID синхронизации между устройствами${fbReady?'':' (заполните FB_CONFIG, чтобы включить)'}</label>
+      <div style="display:flex;gap:6px">
+        <input type="text" id="syncIdShow" value="${syncIdVal}" readonly style="font-family:'JetBrains Mono',monospace;font-size:11px">
+        <button class="mbtn ok" id="syncCopy" style="white-space:nowrap">📋 Копировать</button>
+      </div>
+      <p style="font-size:10px;color:var(--txt2);margin-top:5px;line-height:1.5">
+        Это как пароль — скопируйте его и вставьте на других своих устройствах ниже, чтобы они
+        синхронизировались между собой. Никому не показывайте этот ID.
+      </p>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <input type="text" id="syncIdPair" placeholder="Вставьте ID с другого устройства…" style="font-family:'JetBrains Mono',monospace;font-size:11px">
+        <button class="mbtn ok" id="syncPair" style="white-space:nowrap">🔗 Привязать</button>
+      </div>
+    </div>
+    <div class="brow" style="margin-top:14px">
+      <button class="mbtn cancel" id="setCancel">Отмена</button>
+      <button class="mbtn ok" id="setOk">Сохранить</button>
+    </div>`,ovv=>{
+    ovv.querySelector('#setCancel').onclick=()=>ovv.remove();
+    ovv.querySelector('#setOk').onclick=()=>{
+      S.settings.mainNodeId=ovv.querySelector('#setMain').value||null;
+      S.settings.penalty=Math.max(0,parseInt(ovv.querySelector('#setPen').value)||0);
+      let mn=parseInt(ovv.querySelector('#setEvMin').value);if(!isFinite(mn))mn=-5;
+      let mx=parseInt(ovv.querySelector('#setEvMax').value);if(!isFinite(mx))mx=15;
+      if(mx<mn){const t=mx;mx=mn;mn=t;}
+      S.settings.eventMin=mn;S.settings.eventMax=mx;
+      persist();renderAll();
+      ovv.remove();
+    };
+    ovv.querySelector('#syncCopy').onclick=()=>{
+      const inp=ovv.querySelector('#syncIdShow');
+      inp.select();
+      try{
+        navigator.clipboard.writeText(inp.value).then(()=>{
+          const b=ovv.querySelector('#syncCopy');const old=b.textContent;
+          b.textContent='✅ Скопировано';setTimeout(()=>{b.textContent=old;},1500);
+        }).catch(()=>{document.execCommand('copy');});
+      }catch(e){try{document.execCommand('copy');}catch(e2){}}
+    };
+    ovv.querySelector('#syncPair').onclick=()=>{
+      const v=ovv.querySelector('#syncIdPair').value.trim();
+      if(!v){alert('Вставьте ID с другого устройства.');return;}
+      if(!fbReady){alert('Сначала заполните FB_CONFIG (см. инструкцию) — без него синхронизация недоступна.');return;}
+      if(confirm('Это устройство будет синхронизироваться с данными по ID:\n'+v+'\n\nПродолжить?')){
+        reconnectSync(v);
+        ovv.remove();
+        renderSettingsModal();
+      }
+    };
+  });
+}
+function renderLeagueTableModal(){
+  const mainId=S.settings.mainNodeId;
+  const raw=mainId&&S.nodes[mainId]?nodeVal(mainId):0;
+  const eff=Math.max(0,raw-S.game.penaltyAccum);
+  const curLvl=levelForScore(eff);
+  const MAXLVL=40; // покрывает существенно дальше 1 000 000 очков
+  let rows='';
+  for(let l=0;l<=MAXLVL;l++){
+    const thr=leagueThreshold(l);
+    rows+=`<div class="leaguetbl-row ${l===curLvl?'cur':''}"><span class="li">${leagueIcon(l)}</span><span class="ln">${leagueName(l)}</span><span class="lt">${thr.toLocaleString('ru-RU')}</span></div>`;
+  }
+  const ov=modal(`<h2>🎖 <span>Таблица лиг</span></h2>
+    <div class="tscroll" style="max-height:420px">${rows}</div>
+    <div class="brow" style="margin-top:12px"><button class="mbtn cancel" id="lgClose">Закрыть</button></div>`,ovv=>{
+    ovv.querySelector('#lgClose').onclick=()=>ovv.remove();
+    setTimeout(()=>{const cur=ovv.querySelector('.cur');if(cur)cur.scrollIntoView({block:'center'});},50);
+  });
+}
+function renderRaceModal(){
+  const started=!!S.game.startDate;
+  const days=started?daysSince(S.game.startDate):0;
+  const mainId=S.settings.mainNodeId;
+  const playerScore=mainId&&S.nodes[mainId]?Math.max(0,nodeVal(mainId)-S.game.penaltyAccum):0;
+  const rows=[{name:'🧑 Я',score:playerScore,me:true}]
+    .concat(S.game.competitors.map(c=>({name:c.name,score:competitorScore(c),me:false,id:c.id})))
+    .sort((a,b)=>b.score-a.score);
+  const lbHtml=rows.map((r,i)=>`
+    <div class="lbrow ${r.me?'me':''}">
+      <span class="lbrank">${i+1}</span><span class="lbname">${r.name}</span>
+      <span class="lbscore">${r.score.toLocaleString('ru-RU')}</span>
+      ${r.id?`<button class="lbdel" data-id="${r.id}">✕</button>`:''}
+    </div>`).join('');
+  const evHtml=S.game.eventLog.slice(0,12).map(e=>`<div class="ev">${e.date}: ${e.text}</div>`).join('')||'<div class="ev">Событий пока нет.</div>';
+  const ov=modal(`<h2>🏁 <span>Гонка с конкурентами</span></h2>
+    <div class="daystart-box">
+      ${started
+        ?`<div class="dv">День ${days}</div><div class="dl">с момента старта</div>`
+        :`<div class="dl" style="margin-bottom:10px">Счётчик дней ещё не запущен</div><button class="mbtn ok" id="raceStart">▶ Старт</button>`}
+    </div>
+    <div style="font-size:12px;color:var(--txt2);margin-bottom:6px">Рейтинг (очки = дни × дневной прирост + случайные события):</div>
+    ${lbHtml}
+    <div class="atrow" style="margin-top:10px">
+      <input type="text" id="cName" placeholder="Имя конкурента">
+      <input type="number" id="cRate" placeholder="Очков/день" style="max-width:90px">
+      <button id="cAdd">＋</button>
+    </div>
+    <div class="evlog">${evHtml}</div>
+    <div class="brow" style="margin-top:12px">
+      ${started?'<button class="mbtn cancel" id="raceReset">Сбросить счётчик</button>':''}
+      <button class="mbtn cancel" id="raceClose">Закрыть</button>
+    </div>`,ovv=>{
+    ovv.querySelector('#raceClose').onclick=()=>ovv.remove();
+    const startBtn=ovv.querySelector('#raceStart');
+    if(startBtn)startBtn.onclick=()=>{S.game.startDate=todayKey();persist();ovv.remove();renderRaceModal();};
+    const resetBtn=ovv.querySelector('#raceReset');
+    if(resetBtn)resetBtn.onclick=()=>{
+      if(confirm('Сбросить счётчик дней и обнулить очки конкурентов?')){
+        S.game.startDate=null;S.game.competitors.forEach(c=>c.eventTotal=0);
+        persist();ovv.remove();renderRaceModal();
+      }
+    };
+    ovv.querySelector('#cAdd').onclick=()=>{
+      const name=ovv.querySelector('#cName').value.trim();
+      const rate=parseFloat(ovv.querySelector('#cRate').value);
+      if(!name||!isFinite(rate))return;
+      S.game.competitors.push({id:gid('comp'),name,rate,eventTotal:0});
+      persist();ovv.remove();renderRaceModal();
+    };
+    ovv.querySelectorAll('.lbdel').forEach(b=>{
+      b.onclick=()=>{S.game.competitors=S.game.competitors.filter(c=>c.id!==b.dataset.id);persist();ovv.remove();renderRaceModal();};
+    });
+  });
+}
+
+// ── Подключение кнопок тулбара / нижней панели к модалкам v5 ──
+document.getElementById('bSet').addEventListener('click',renderSettingsModal);
+document.getElementById('bRace').addEventListener('click',renderRaceModal);
+document.getElementById('bColl').addEventListener('click',renderCollectionModal);
+document.getElementById('bLg').addEventListener('click',renderLeagueTableModal);
+document.getElementById('lg-chest').addEventListener('click',renderChestsModal);
+document.getElementById('lg-day').addEventListener('click',renderRaceModal);
+document.getElementById('lg-name').addEventListener('click',()=>{S.settings.mainNodeId?renderLeagueTableModal():renderSettingsModal();});
+document.getElementById('lg-track').addEventListener('click',()=>{S.settings.mainNodeId?renderLeagueTableModal():renderSettingsModal();});
+
+
+// ══════════════════════════════════════════════════
+//  EXPORT / IMPORT
+// ══════════════════════════════════════════════════
+document.getElementById('bExp').addEventListener('click',()=>{
+  const blob=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='dtree_backup_'+todayKey()+'.json';a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+document.getElementById('bImp').addEventListener('click',()=>{
+  document.getElementById('fileInp').click();
+});
+document.getElementById('fileInp').addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const parsed=JSON.parse(ev.target.result);
+      if(parsed.nodes){
+        S=migrate(parsed);persist();renderAll();
+        alert('✅ Данные загружены!');
+      }else alert('❌ Неверный формат файла.');
+    }catch(err){alert('❌ Ошибка чтения файла.');}
+    e.target.value='';
+  };
+  r.readAsText(f);
+});
+
+// ══════════════════════════════════════════════════
+//  TOOLBAR BUTTONS
+// ══════════════════════════════════════════════════
+document.getElementById('bConn').addEventListener('click',()=>setMode(mode==='conn'?'nav':'conn'));
+document.getElementById('bDel').addEventListener('click',()=>setMode(mode==='del'?'nav':'del'));
+document.getElementById('bSave').addEventListener('click',()=>persist());
+
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();persist();}
+  if(e.key==='Escape')setMode('nav');
+});
+
+// ══════════════════════════════════════════════════
+//  HELP
+// ══════════════════════════════════════════════════
+document.getElementById('bHelp').addEventListener('click',()=>{
+  modal(`<h2>❓ <span>Инструкция</span></h2>
+    <div class="isect"><h3>📱 На телефоне</h3><ul>
+      <li><b>Удержите палец (0.3 сек)</b> на рамке → рамка станет жёлтой → тяните</li>
+      <li>Два пальца на пустом месте → масштабирование</li>
+      <li>Один палец на пустом месте → перемещение по холсту</li>
+      <li>Нажмите «↗ Стрелка», затем тапните ИСТОЧНИК и ЦЕЛЬ</li>
+    </ul></div>
+    <div class="isect"><h3>🖥 На ноутбуке</h3><ul>
+      <li>Тяните рамку мышью для перемещения</li>
+      <li>Колесо мыши → масштаб; тяните пустое место → навигация</li>
+      <li><span class="kbd">Ctrl+S</span> — сохранить; <span class="kbd">Esc</span> — навигация</li>
+    </ul></div>
+    <div class="isect"><h3>📦 Рамки и числа</h3><ul>
+      <li>Число на кружке = сумма галочек снизу по дереву</li>
+      <li>Двойной клик на тексте рамки / метке галочки → редактировать</li>
+      <li>Листья дерева (без исходящих стрелок) показывают кнопку «＋ Галочка»</li>
+    </ul></div>
+    <div class="isect"><h3>💾 Сохранение данных на Android</h3><ul>
+      <li>Данные хранятся в браузере. Иногда Chrome их очищает.</li>
+      <li><b>Важно:</b> нажимайте «📤» для экспорта резервной копии!</li>
+      <li>При переустановке Chrome — импортируйте файл через «📥»</li>
+      <li>Открывайте файл ВСЕГДА в одном браузере (напр. только Chrome)</li>
+    </ul></div>
+    <div class="brow"><button class="mbtn ok" id="hc">Понятно!</button></div>`,
+  ov=>{ov.querySelector('#hc').onclick=()=>ov.remove();});
+});
+
+// ══════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════
+async function init(){
+  try{idb=await openIDB();}catch(e){console.warn('IDB unavailable');}
+  const saved=await restore();
+  if(saved){S=migrate(saved);}
+  if(!Object.keys(S.nodes).length){
+    const i1=gid('n'),i2=gid('n'),i3=gid('n');
+    S.nodes[i1]={id:i1,x:300,y:180,text:'Главная цель',type:'node',tableId:null,checkboxes:[]};
+    S.nodes[i2]={id:i2,x:120,y:350,text:'Подзадача 1',type:'node',tableId:null,checkboxes:[]};
+    S.nodes[i3]={id:i3,x:480,y:350,text:'Подзадача 2',type:'node',tableId:null,checkboxes:[]};
+    S.conns.push({id:gid('c'),from:i1,to:i2});
+    S.conns.push({id:gid('c'),from:i1,to:i3});
+    S.settings.mainNodeId=i1; // для новых пользователей сразу отслеживаем «Главную цель»
+  }
+  dailyTick(); // v5: догоняющая проверка штрафов/идеальных дней/событий конкурентов за пропущенные дни
+  renderAll();
+  renderLeagueBar();
+  setInterval(persist,30000);
+  initFirebase();
+
+  // Register Service Worker (PWA)
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js')
+      .then(r=>console.log('SW registered',r.scope))
+      .catch(e=>console.log('SW unavailable (normal for local file):',e));
+  }
+
+  // Show hint for mobile
+  if('ontouchstart' in window){
+    const h=document.getElementById('lphint');
+    h.style.opacity='1';setTimeout(()=>{h.style.opacity='0';},3500);
+  }
+}
+
+init();
+
+/*
+══════════════════════════════════════════════════════
+  ВЕРСИЯ 5 — ЧТО СДЕЛАНО:
+══════════════════════════════════════════════════════
+  ✅ Firebase: анонимная авторизация + данные в /users/{uid}/data
+  ✅ Бесшовная миграция старых данных (и localStorage/IDB, и Firebase root)
+  ✅ Service Worker v5: кэширует HTML + CDN-библиотеки для полного офлайна
+  ✅ Лиги (бесконечная экспоненциальная лестница, таблица до 1 000 000+)
+  ✅ Штрафы за пропущенные дни (без ухода в минус)
+  ✅ Счётчик дней «Старт» + конкуренты + случайные события + рейтинг
+  ✅ Сундуки: идеальный день / левел-ап / круглые числа / стрики
+  ✅ Гача-система: 450 эмодзи, 4 редкости, пити-таймер на 200 открытий
+  ✅ Коллекция эмодзи с прогрессом и скрытыми «?»
+
+  Подробная инструкция по настройке Firebase, GitHub Pages, проверке офлайна
+  и тестированию новых функций — в отдельном файле INSTRUCTIONS.md, который
+  прислан вместе с этим кодом.
+══════════════════════════════════════════════════════
+*/
+</script>
+</body>
+</html>
