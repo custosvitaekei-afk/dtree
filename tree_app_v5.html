@@ -102,6 +102,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .mbtn{padding:8px 16px;border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;transition:all .15s}
 .mbtn.cancel{background:var(--border);color:var(--txt2)}.mbtn.cancel:hover{background:var(--surf2)}
 .mbtn.ok{background:var(--acc);color:#fff}.mbtn.ok:hover{background:#7c73ff}
+.mbtn.danger{background:transparent;color:var(--red);border:1px solid var(--red)}.mbtn.danger:hover{background:var(--red);color:#fff}
+.mbtn:disabled{opacity:.5;cursor:default}
 
 /* ─── TABLE MODAL ─── */
 .tscroll{overflow-x:auto;overflow-y:auto;max-height:360px;border:1px solid var(--border);border-radius:8px;margin-bottom:12px}
@@ -112,12 +114,8 @@ td{padding:7px 10px;border-bottom:1px solid var(--border);text-align:center}
 td.dtd{text-align:left;color:var(--txt2);font-size:11px;white-space:nowrap}
 tr:last-child td{border-bottom:none}
 tr.today td{background:rgba(108,99,255,.1)}tr.today td.dtd{color:var(--acc);font-weight:700}
-tr.row-pending td{background:rgba(249,202,36,.08)}tr.row-pending td.dtd{color:var(--yel);font-weight:700}
-tr.row-sealed td{opacity:.5}tr.row-sealed td.dtd{color:var(--txt2)}
-tr.row-sealed input[type=checkbox]{cursor:not-allowed}
 td input[type=checkbox]{width:16px;height:16px;accent-color:var(--acc);cursor:pointer}
 td input[type=checkbox]:disabled{cursor:not-allowed;opacity:.4}
-.tblnotice{background:rgba(255,101,132,.12);border:1px solid var(--red);color:var(--red);font-size:11px;padding:8px 10px;border-radius:8px;margin-bottom:10px;line-height:1.5}
 .sbar{display:flex;align-items:center;gap:14px;background:var(--surf2);border:1px solid var(--border);border-radius:9px;padding:10px 14px;margin-bottom:14px}
 .sv{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--yel)}
 .sl{font-size:11px;color:var(--txt2)}
@@ -211,16 +209,6 @@ td input[type=checkbox]:disabled{cursor:not-allowed;opacity:.4}
 .fx-toast b{color:var(--txt)}
 .fx-chest-emoji{font-size:26px;animation:chestPopIn .5s ease}
 @keyframes chestPopIn{0%{transform:scale(0) rotate(-20deg)}60%{transform:scale(1.25) rotate(6deg)}100%{transform:scale(1) rotate(0)}}
-.fx-toast-penalty{border-color:var(--red);background:rgba(255,101,132,.10)}
-.fx-toast-penalty b{color:var(--red)}
-
-/* ─── v6 ЧАСТЬ 3: ШТРАФ — тряска/вспышка полосы лиги + улетающее число ─── */
-@keyframes leagueBarShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
-@keyframes leagueBarFlash{0%,100%{background:var(--surf)}30%{background:rgba(255,101,132,.35)}}
-#leaguebar.penalty-flash{animation:leagueBarShake .5s ease,leagueBarFlash .9s ease}
-.fx-floatnum{position:fixed;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:20px;color:var(--red);
-  z-index:7000;pointer-events:none;text-shadow:0 0 8px rgba(255,101,132,.6);animation:floatDown 1.3s ease forwards}
-@keyframes floatDown{0%{opacity:0;transform:translateY(0) scale(.7)}15%{opacity:1;transform:translateY(4px) scale(1.15)}100%{opacity:0;transform:translateY(46px) scale(.85)}}
 
 /* ─── CHEST MODAL ─── */
 .chestbox{display:flex;flex-direction:column;align-items:center;gap:10px;padding:10px 0}
@@ -238,7 +226,13 @@ td input[type=checkbox]:disabled{cursor:not-allowed;opacity:.4}
 .chest-list-item{display:flex;align-items:center;gap:10px;background:var(--surf2);border:1px solid var(--border);border-radius:9px;padding:9px 12px;margin-bottom:7px}
 .chest-list-item .ce{font-size:26px}
 .chest-list-item .ci{flex:1;font-size:12px;color:var(--txt2)}
-.pity-note{font-size:10px;color:var(--txt2);text-align:center;margin-top:4px}
+.rules-h{font-size:12px;font-weight:700;color:var(--txt2);margin:14px 0 6px}
+.rule-row{font-size:12px;line-height:1.5;padding:7px 9px;background:var(--surf2);border:1px solid var(--border);border-radius:8px;margin-bottom:5px}
+.rule-row b{color:var(--yel);font-family:'JetBrains Mono',monospace}
+.rule-sub{font-size:11px;color:var(--txt2);margin:2px 0 0 10px}
+.chance-row{display:flex;align-items:center;gap:10px;margin-bottom:5px}
+.chance-row b{font-family:'JetBrains Mono',monospace;min-width:52px}
+.chance-n{font-size:10px;color:var(--txt2);margin-left:auto}
 
 /* ─── COLLECTION GRID ─── */
 .collgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px;margin-bottom:10px}
@@ -300,6 +294,29 @@ td input[type=checkbox]:disabled{cursor:not-allowed;opacity:.4}
 .chart-note{font-size:11px;color:var(--txt2);margin-top:6px;text-align:center;line-height:1.5}
 .chart-note b{color:var(--yel);font-family:'JetBrains Mono',monospace}
 .chart-empty,.stat-empty{color:var(--txt2);font-size:13px;line-height:1.6;padding:10px 2px}
+
+/* ─── СЧЁТЧИК ИДЕАЛЬНЫХ ДНЕЙ (v7, часть 3) — правый верхний угол главного экрана ───
+   Поверх холста, под панелью инструментов. pointer-events:none — чтобы не мешать
+   перетаскиванию рамок и жестам камеры в этом углу. */
+#perfect-badge{position:fixed;top:58px;right:12px;z-index:900;text-align:right;pointer-events:none;font-family:'JetBrains Mono',monospace;line-height:1.1;user-select:none}
+#pf-streak{font-size:34px;font-weight:700;color:var(--yel);text-shadow:0 0 14px rgba(255,200,60,.55),0 2px 4px rgba(0,0,0,.6);white-space:nowrap}
+#pf-streak.zero{color:var(--txt2);text-shadow:none;opacity:.7}
+/* ─── ПОЛНОЭКРАННЫЕ ГРАФИКИ (v7, часть 4б) ─── */
+.chartsec-h{display:flex;align-items:center;justify-content:space-between}
+.fs-open,.fs-x,.fs-sc{background:var(--surf2);border:1px solid var(--border);color:var(--txt2);border-radius:7px;cursor:pointer;font-family:inherit}
+.fs-open{font-size:13px;padding:1px 9px}
+.fs-open:hover,.fs-x:hover,.fs-sc:hover{border-color:var(--acc);color:var(--acc)}
+.fsov{position:fixed;inset:0;z-index:3500;background:var(--bg);display:flex;flex-direction:column;gap:8px;padding:max(10px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+.fs-top{display:flex;align-items:center;justify-content:space-between}
+.fs-title{font-size:15px;font-weight:700}
+.fs-x{font-size:15px;padding:4px 12px}
+.fs-scales{display:flex;flex-wrap:wrap;gap:5px}
+.fs-sc{font-size:12px;font-weight:700;padding:5px 10px}
+.fs-sc.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.fs-chart{flex:1;min-height:0;overflow:hidden}
+.fs-chart svg{display:block}
+.fs-foot{font-size:12px;color:var(--txt2);line-height:1.6;text-align:center}
+#pf-sub{font-size:10px;color:var(--txt2);opacity:.6;margin-top:3px;white-space:nowrap;text-shadow:0 1px 3px rgba(0,0,0,.7)}
 </style>
 </head>
 <body>
@@ -313,7 +330,7 @@ td input[type=checkbox]:disabled{cursor:not-allowed;opacity:.4}
   <button class="tb" id="bAch">🏆 Награда</button>
   <button class="tb" id="bAchV">🏅 Награды</button>
   <button class="tb" id="bLg" title="Таблица лиг">🎖 Лиги</button>
-  <button class="tb" id="bStat" title="Статистика: графики очков, прогресс, идеальные дни">📊 Статистика</button>
+  <button class="tb" id="bStat" title="Статистика: графики очков и прогресс">📊 Статистика</button>
   <button class="tb" id="bRace" title="Счётчик дней и конкуренты">🏁 Гонка</button>
   <button class="tb" id="bColl" title="Коллекция эмодзи">🎒 Коллекция</button>
   <button class="tb" id="bSet" title="Настройки геймификации">⚙ Настройки</button>
@@ -337,6 +354,12 @@ td input[type=checkbox]:disabled{cursor:not-allowed;opacity:.4}
       <g id="ag"></g>
     </svg>
   </div>
+</div>
+
+<!-- v7 (часть 3): счётчик идеальных дней — крупно «подряд», мелко «всего» -->
+<div id="perfect-badge">
+  <div id="pf-streak" class="zero">🔥 0</div>
+  <div id="pf-sub">идеальных дней подряд · всего 0</div>
 </div>
 
 <div id="leaguebar">
@@ -389,34 +412,29 @@ const FB_LEGACY_PATH = "dtree_main"; // путь, где раньше (v4) ле�
 let S = {
   nodes:{},   // id→{id,x,y,text,type,tableId,checkboxes:[{checked,label}]}
   conns:[],   // [{id,from,to}]
-  tables:{},  // id→{id,name,tasks:[{id,name}],entries:{dateKey:{taskId:bool}}}
+  tables:{},  // id→{id,name,tasks:[{id,name}],entries:{dateKey:{taskId:true}},arch?:{…}} — arch: архив дней старше 730 (часть 7, см. compactTableEntries)
   achiev:[],  // [{id,text,icon,cond:{type,nodeId,tableId,threshold}}]
   cam:{x:0,y:0,scale:1},
   lastModified:0,  // timestamp for Firebase conflict resolution
   // ── v5 gamification ──
   settings:{
-    mainNodeId:null,   // id рамки, чьи очки отслеживаются в лиге/штрафах
-    penalty:10,        // штраф за пропущенный день (по умолчанию -10)
+    mainNodeId:null,   // id рамки, чьи очки отслеживаются в лиге
     eventMin:-5,       // диапазон случайных событий конкурентов
     eventMax:15,
-    soundOn:true,      // v6: звуковые эффекты (галочка/сундук/лига/штраф)
-    fxOn:true          // v6: визуальные эффекты (тосты, конфетти-лучи, тряска при штрафе)
+    soundOn:true,      // v6: звуковые эффекты (галочка/сундук/лига)
+    fxOn:true          // v6: визуальные эффекты (тосты, конфетти-лучи)
   },
   game:{
-    penaltyAccum:0,        // суммарный вычет очков (эффективный балл = max(0,raw-penaltyAccum))
     lastDailyCheck:null,   // последняя дата (YYYY-MM-DD), для которой уже прошла дневная проверка
     lastLeagueLevel:0,     // последний известный уровень лиги (для детекции level-up)
-    grantedRoundScore:0,   // последний "круглый" порог (кратный 100), за который уже выдан сундук
+    grantedStepScore:0,    // v7 (часть 5): последний порог, кратный CHEST_STEP (30), за который выдан сундук «шаг очков»
+    grantedJubilee:0,      // v7 (часть 5): последнее юбилейное число из ряда nextJubilee(), за которое выдан сундук
     grantedStreaks:{},     // {tableId:[7,30,...]} — уже выданные стрик-сундуки
-    perfectDays:{},        // v6: {dateKey:true} — ВСЕ даты, за которые уже выдан сундук "идеальный день"
-    penalizedDays:{},      // v6: {dateKey:amount} — пропущенные дни со штрафом, который ещё МОЖНО отменить
-                            //     ретроактивной отметкой (запись удаляется при отмене штрафа; если день
-                            //     "запечатан" более поздней активностью, запись остаётся навсегда)
-    history:{},            // v6: {dateKey:effScore} — история очков (шкала лиги) по дням, для статистики.
-                            //     "Сегодня" перезаписывается при каждом пересчёте; прошлые дни — не трогаются
-                            //     (кроме случая ретроактивного исправления дня — см. openTable).
+    perfectDays:{},        // v7: {dateKey:true} — множество дат, признанных идеальными (см. блок «ИДЕАЛЬНЫЙ ДЕНЬ»)
+    perfectTotal:0,        // v7: число идеальных дней за всё время (только +1/−1 при смене статуса дня)
+    perfectStreak:0,       // v7: текущая серия идеальных дней подряд (хранится, а не считается на лету)
+    history:{d:{},w:{},m:{},y:{},fz:{max:null,sum:0,cnt:0,last:null,ld:null}}, // v7 (часть 4): очки лиги по слоям — см. блок «ИСТОРИЯ ОЧКОВ»
     chests:[],             // [{id,reason}] — невскрытые сундуки
-    opensSinceLegendary:0, // счётчик для пити-таймера
     startDate:null,        // дата нажатия «Старт» гонки
     competitors:[],        // [{id,name,rate,eventTotal}]
     eventLog:[]            // [{date,text}] — лог случайных событий конкурентов
@@ -432,6 +450,10 @@ const gid=p=>p+'_'+Date.now()+'_'+(uid++);
 const SKEY='dtree_v5';
 const SKEY_LEGACY='dtree_v4'; // ключ предыдущей версии — для бесшовной миграции
 let idb=null;
+// v7: true с момента нажатия «Стереть всё» до перезагрузки страницы. Пока флаг поднят,
+// persist() и syncToFb() ничего не пишут — иначе автосейв (30 с) или слушатель Firebase
+// мог бы «воскресить» старые данные между очисткой хранилищ и перезагрузкой.
+let _resetting=false;
 
 async function openIDB(){
   return new Promise((res,rej)=>{
@@ -443,7 +465,10 @@ async function openIDB(){
 }
 
 async function persist(){
+  if(_resetting)return; // v7: идёт полный сброс — ничего не сохраняем
+  compactTablesData(); // v7 (часть 7): старые дни таблиц и идеальные дни → в компактный архив (очки и серии не меняются)
   recomputeProgress(); // v5: проверка лиги/сундуков/стриков перед сохранением
+  refreshStatsIfOpen(); // v7 (часть 4): если модалка статистики открыта — график сразу показывает новую сегодняшнюю точку
   S.lastModified=Date.now();
   const json=JSON.stringify(S);
   // IDB
@@ -502,27 +527,55 @@ function migrate(s){
   // ── v5: backfill gamification fields for old (v4 and earlier) saves ──
   if(!s.settings)s.settings={};
   if(s.settings.mainNodeId===undefined)s.settings.mainNodeId=null;
-  if(typeof s.settings.penalty!=='number')s.settings.penalty=10;
   if(typeof s.settings.eventMin!=='number')s.settings.eventMin=-5;
   if(typeof s.settings.eventMax!=='number')s.settings.eventMax=15;
   if(typeof s.settings.soundOn!=='boolean')s.settings.soundOn=true; // v6: звук включён по умолчанию
   if(typeof s.settings.fxOn!=='boolean')s.settings.fxOn=true;       // v6: визуальные эффекты включены по умолчанию
   if(!s.game)s.game={};
-  if(typeof s.game.penaltyAccum!=='number')s.game.penaltyAccum=0;
+  // v7 (часть 2): штрафов и замочков больше нет — вычищаем устаревшие поля старых сохранений.
+  delete s.settings.penalty;delete s.game.penaltyAccum;delete s.game.penalizedDays;
   if(s.game.lastDailyCheck===undefined)s.game.lastDailyCheck=null;
   if(typeof s.game.lastLeagueLevel!=='number')s.game.lastLeagueLevel=0;
-  if(typeof s.game.grantedRoundScore!=='number')s.game.grantedRoundScore=0;
+  // v7 (часть 5): «каждые 100 очков» (grantedRoundScore) заменено двумя триггерами — шаг 30 и юбилейные числа.
+  // Старый порог берём как начальный для шага, чтобы не выдать лишнего; пити-таймер удалён совсем.
+  if(typeof s.game.grantedStepScore!=='number')s.game.grantedStepScore=(typeof s.game.grantedRoundScore==='number')?s.game.grantedRoundScore:0;
+  if(typeof s.game.grantedJubilee!=='number')s.game.grantedJubilee=0;
+  delete s.game.grantedRoundScore;delete s.game.opensSinceLegendary;
   if(!s.game.grantedStreaks)s.game.grantedStreaks={};
-  // v6: perfectDayDate (одна последняя дата) → perfectDays (множество ВСЕХ дат) —
-  // нужно, чтобы ретроактивно закрытые дни из разных периодов не конфликтовали друг с другом.
-  if(!s.game.perfectDays||typeof s.game.perfectDays!=='object'){
-    s.game.perfectDays={};
-    if(s.game.perfectDayDate)s.game.perfectDays[s.game.perfectDayDate]=true;
+  // v7 (часть 7): архивы старых дней (таблицы и идеальные дни). Повреждённый архив проще отбросить, чем читать.
+  if(s.game.perfectArch&&(typeof s.game.perfectArch.to!=='string'||typeof s.game.perfectArch.tail!=='number'))delete s.game.perfectArch;
+  Object.values(s.tables||{}).forEach(t=>{
+    if(!t.entries||typeof t.entries!=='object')t.entries={};
+    const a=t.arch;
+    if(a&&(typeof a.to!=='string'||typeof a.total!=='number'||typeof a.tail!=='number'||typeof a.best!=='number'||typeof a.days!=='number'))delete t.arch;
+  });
+  // v7 (часть 3): идеальные дни = множество perfectDays + сохранённые счётчики perfectTotal / perfectStreak.
+  // Устаревшее поле perfectDayDate больше не нужно. Миграция «по минимуму»: если счётчиков нет
+  // (сохранение до части 3) — один раз выводим их из уже имеющегося множества.
+  delete s.game.perfectDayDate;
+  if(!s.game.perfectDays||typeof s.game.perfectDays!=='object'||Array.isArray(s.game.perfectDays))s.game.perfectDays={};
+  if(typeof s.game.perfectTotal!=='number')s.game.perfectTotal=Object.keys(s.game.perfectDays).length;
+  if(typeof s.game.perfectStreak!=='number')s.game.perfectStreak=calcPerfectStreakFor(s.game.perfectDays,s.game.perfectArch);
+  // v7 (часть 4): история хранится слоями d/w/m/y (дни/недели/месяцы/годы) + fz (скаляры свёрнутой части).
+  // Старый плоский формат {dateKey:score} просто переносится в слой дней (дальше его свернёт compactHistory).
+  {
+    let h=s.game.history;
+    if(!h||typeof h!=='object'||Array.isArray(h))h={};
+    if(!h.d||typeof h.d!=='object'){
+      const old=h;h={d:{}};
+      Object.keys(old).forEach(k=>{if(/^\d{4}-\d\d-\d\d$/.test(k)&&typeof old[k]==='number')h.d[k]=old[k];});
+    }
+    ['w','m','y'].forEach(t=>{if(!h[t]||typeof h[t]!=='object')h[t]={};});
+    if(!h.fz||typeof h.fz!=='object')h.fz={};
+    const fz=h.fz;
+    if(typeof fz.sum!=='number')fz.sum=0;
+    if(typeof fz.cnt!=='number')fz.cnt=0;
+    if(typeof fz.max!=='number')fz.max=null;
+    if(typeof fz.last!=='number')fz.last=null;
+    if(typeof fz.ld!=='string')fz.ld=null;
+    s.game.history=h;
   }
-  if(!s.game.penalizedDays||typeof s.game.penalizedDays!=='object')s.game.penalizedDays={};
-  if(!s.game.history||typeof s.game.history!=='object')s.game.history={};
   if(!Array.isArray(s.game.chests))s.game.chests=[];
-  if(typeof s.game.opensSinceLegendary!=='number')s.game.opensSinceLegendary=0;
   if(s.game.startDate===undefined)s.game.startDate=null;
   if(!Array.isArray(s.game.competitors))s.game.competitors=[];
   if(!Array.isArray(s.game.eventLog))s.game.eventLog=[];
@@ -546,7 +599,11 @@ function nodeVal(id){
   const n=S.nodes[id];if(!n)return 0;
   if(n.type==='table'&&n.tableId){
     const t=S.tables[n.tableId];if(!t)return 0;
-    let s=0;Object.values(t.entries||{}).forEach(day=>Object.values(day).forEach(v=>{if(v)s++;}));
+    // v7 (часть 7): значение = отметки в архиве (старше 730 дней, хранятся числом) + отметки в живых entries.
+    // Записи entries за дни ≤ arch.to уже учтены в архиве и игнорируются — двойного счёта быть не может.
+    const a=t.arch,E=t.entries||{};
+    let s=a?a.total:0;
+    for(const k in E){if(a&&k<=a.to)continue;for(const v of Object.values(E[k]))if(v)s++;}
     return s;
   }
   const ch=S.conns.filter(c=>c.from===id);
@@ -556,14 +613,112 @@ function nodeVal(id){
 
 function streak(tableId){
   const t=S.tables[tableId];if(!t)return 0;
+  const E=t.entries||{},a=t.arch;
   let s=0;const d=new Date();
-  for(let i=0;i<9999;i++){
+  for(let i=0;i<99999;i++){
     const k=localKey(d);
-    const e=t.entries[k];
+    // v7 (часть 7): дошли до архивной части — серия продолжается на arch.tail дней (серия активных дней,
+    // заканчивающаяся ровно в день arch.to); глубже в живых entries не заглядываем.
+    if(a&&k<=a.to){if(k===a.to)s+=a.tail;break;}
+    const e=E[k];
     if(!e||!Object.values(e).some(Boolean))break;
     s++;d.setDate(d.getDate()-1);
   }
   return s;
+}
+
+// ══════════════════════════════════════════════════
+//  СЖАТИЕ СТАРЫХ ДАННЫХ ТАБЛИЦ ПРИВЫЧЕК (v7, часть 7)
+// ══════════════════════════════════════════════════
+/*
+  Проблема: календарь таблицы показывает 730 дней, а хранилище росло бесконечно — в entries копились все дни
+  за всё время (плюс openTable() при каждом открытии создавал пустые {} на все 730 дней). Всё это целиком
+  уходит в IndexedDB / localStorage / Firebase (JSON.stringify(S)) при каждом сохранении.
+
+  Решение: дни СТАРШЕ TBL_KEEP_DAYS (730) переезжают из t.entries в компактный архив t.arch, а из entries удаляются.
+  Вручную отметить такой день и так нельзя (он за пределами календаря), так что сжатие ничего не отнимает у UI.
+    arch.to    — архив покрывает ВСЕ дни ≤ to (граница сдвигается на день вперёд каждый день);
+    arch.total — всего отметок в архиве → nodeVal() (очки лиги не меняются!);
+    arch.days  — дней хотя бы с одной отметкой; arch.best — самая длинная серия таких дней внутри архива;
+    arch.tail  — серия активных дней, заканчивающаяся ровно в день to → streak() не обрезается на 730 днях
+                 (серия в 800 дней останется 800, награды за стрики не «откатываются»);
+    arch.y     — по годам: {d: дней с отметками, c: отметок, t: {id привычки: отметок}} — «что-то подобное по смыслу»
+                 вместо потерянных данных: видно, сколько раз и когда выполнялась каждая привычка.
+  Рост хранилища: одна запись года на таблицу (≈ 0.3 КБ при 10 привычках) — практически плоско. Помесячную
+  детализацию не храним сознательно: она лишь множила бы записи, а UI её не использует.
+  Решения по неоднозначностям: (1) пустые дни и false-флаги не храним вообще — все читатели проверяют значение
+  на истинность, поэтому entries[день]={} и {x:false} равны «нет записи»; (2) если в entries оказались записи ≤ arch.to
+  (например, ручной импорт), они считаются дубликатами архива и выбрасываются — «архив главнее»; (3) то же
+  сжатие делается для S.game.perfectDays (множество идеальных дней, ~13 байт/день) — см. archivePerfectDays().
+*/
+const TBL_KEEP_DAYS=730; // сколько последних дней показывает и позволяет править календарь таблицы
+const _DATE_RE=/^\d{4}-\d\d-\d\d$/;
+
+// Сжимает одну таблицу: дни ≤ boundary уходят в t.arch. Идемпотентна. Возвращает true, если что-то изменилось.
+function compactTableEntries(t,boundary){
+  const E=t.entries||(t.entries={});
+  let changed=false;
+  // (а) нормализация: не храним пустые дни и false-флаги
+  for(const k of Object.keys(E)){
+    const day=E[k];
+    if(!day||typeof day!=='object'){delete E[k];changed=true;continue;}
+    let any=false;
+    for(const id of Object.keys(day)){if(day[id])any=true;else{delete day[id];changed=true;}}
+    if(!any){delete E[k];changed=true;}
+  }
+  // (б) перенос дней ≤ границы в архив
+  let a=t.arch;
+  const old=(a&&typeof a.to==='string')?a.to:null;
+  const B=(old&&old>boundary)?old:boundary; // граница никогда не откатывается назад (сдвиг часов / часового пояса)
+  const todo=Object.keys(E).filter(k=>_DATE_RE.test(k)&&k<=B).sort();
+  if(!a){
+    if(!todo.length)return changed;
+    a=t.arch={to:null,tail:0,best:0,total:0,days:0,y:{}};
+  }
+  if(!a.y||typeof a.y!=='object')a.y={};
+  let prev=old,run=old?(a.tail||0):0,best=a.best||0;
+  for(const k of todo){
+    if(old&&k<=old){delete E[k];changed=true;continue;} // уже покрыто архивом → дубликат
+    if(prev&&ymdAddDays(prev,1)!==k)run=0;               // между prev и k были дни без отметок → серия прервана
+    run++;if(run>best)best=run;prev=k;
+    const Y=a.y[k.slice(0,4)]||(a.y[k.slice(0,4)]={d:0,c:0,t:{}});
+    let n=0;
+    for(const id of Object.keys(E[k])){if(E[k][id]){n++;Y.t[id]=(Y.t[id]||0)+1;}}
+    Y.d++;Y.c+=n;a.days++;a.total+=n;
+    delete E[k];changed=true;
+  }
+  if(prev!==B)run=0; // последние дни до границы без отметок → серия на границе равна 0
+  if(a.to!==B||a.tail!==run||a.best!==best){a.to=B;a.tail=run;a.best=best;changed=true;}
+  return changed;
+}
+
+// Идеальные дни: те же правила — дни ≤ boundary вычёркиваются из множества, а серию на границе помнит perfectArch.tail.
+// perfectTotal (общее число идеальных дней) хранится отдельным числом и не меняется.
+function archivePerfectDays(boundary){
+  const G=S.game,P=G.perfectDays;
+  let a=G.perfectArch;
+  const old=(a&&typeof a.to==='string')?a.to:null;
+  const B=(old&&old>boundary)?old:boundary;
+  const keys=Object.keys(P).filter(k=>k<=B);
+  if(!keys.length&&!old)return false;
+  // серия идеальных дней, заканчивающаяся ровно в B (может продолжаться в уже заархивированной части)
+  let run=0,k=B,guard=0;
+  while(guard++<40000){
+    if(old&&k===old){run+=(a.tail||0);break;}
+    if(!P[k])break;
+    run++;k=ymdAddDays(k,-1);
+  }
+  keys.forEach(x=>delete P[x]);
+  G.perfectArch={to:B,tail:run};
+  return true;
+}
+
+// Вызывается из persist() (а значит и при старте, после импорта и после прихода данных из облака).
+// Дёшево: проход по ключам записей и пара сравнений строк; nodeVal()/streak() от сжатия не меняются.
+function compactTablesData(){
+  const B=ymdAddDays(todayKey(),-TBL_KEEP_DAYS);
+  Object.values(S.tables).forEach(t=>compactTableEntries(t,B));
+  archivePerfectDays(B);
 }
 
 // ══════════════════════════════════════════════════
@@ -662,6 +817,7 @@ function bindFbDiag(){
 }
 
 function syncToFb(immediate=false){
+  if(_resetting)return; // v7: идёт полный сброс — не заливаем старые данные обратно в облако
   if(!fbDb||!fbUserPath)return;
   if(fbPermDenied)return; // правила Firebase заблокировали доступ — не тратить время
   const doSync=async()=>{
@@ -735,6 +891,10 @@ function startFbListener(){
 // но в старом общем пути (FB_LEGACY_PATH, использовался в v4 без авторизации)
 // что-то есть — переносим один раз.
 async function migrateLegacyFbData(){
+  // v7: после полного сброса (см. fullReset) миграция отключается навсегда. Иначе, раз ветка
+  // sync/{id}/data только что удалена, этот код подтянул бы из старого общего пути
+  // FB_LEGACY_PATH прежние данные v4 — «фантом», ради борьбы с которым и делался сброс.
+  try{if(localStorage.getItem('dtree_nolegacy')==='1')return;}catch(e){}
   try{
     const mineSnap=await fbDb.ref(fbUserPath).once('value');
     if(mineSnap.exists())return; // данные уже есть — ничего не делаем
@@ -746,6 +906,72 @@ async function migrateLegacyFbData(){
   }catch(e){
     console.warn('Миграция старых Firebase-данных не удалась (это не критично):',e);
   }
+}
+
+// ══════════════════════════════════════════════════
+//  v7: ПОЛНЫЙ СБРОС — «стереть всё и начать с чистого листа»
+// ══════════════════════════════════════════════════
+// РЕШЕНИЕ ПО SYNC ID (ключ localStorage dtree_syncid): ОСТАВЛЯЕМ.
+//  • Сброс не будет «фиктивным»: облачную ветку sync/{id}/data мы удаляем сами, поэтому
+//    при следующем запуске из облака вернуться нечему. Сам по себе ID — это лишь адрес
+//    ветки, а не данные.
+//  • Если стереть ID, устройство потеряет связь с другими своими устройствами: они продолжат
+//    хранить старые данные и слать их в старую ветку. С сохранённым ID остальные устройства
+//    получают чистое состояние (оно новее по lastModified) и тоже обнуляются.
+//  • Оговорка: устройство, которое было офлайн и изменит данные уже ПОСЛЕ сброса, выиграет по
+//    lastModified (last-write-wins) — это свойство синхронизации, а не сброса.
+// ПОРЯДОК: облако (пока жив fbDb) → IndexedDB → localStorage → перезагрузка страницы.
+// Перезагрузка нужна намеренно: она гарантированно выбрасывает in-memory состояние S и все
+// таймеры, а init() отрабатывает ровно как на чистом устройстве (создаёт демо-дерево).
+// Service Worker и его кэш НЕ трогаем — это код приложения, не данные, и офлайн должен работать.
+async function fullReset(){
+  _resetting=true;      // блокирует persist()/syncToFb() до перезагрузки
+  clearTimeout(fbTimer); // отменяем отложенную отправку старого состояния
+
+  // 1. Облако: отписываемся от ветки (чтобы слушатель не среагировал на удаление) и удаляем её.
+  //    Если связи нет, remove() не завершится — ждём максимум 4 с. Это не страшно: новое чистое
+  //    состояние после перезагрузки всё равно перезапишет ветку (у него свежий lastModified).
+  let cloudOk=true;
+  if(fbDb&&fbUserPath&&!fbPermDenied){
+    try{fbDb.ref(fbUserPath).off();}catch(e){}
+    try{
+      cloudOk=await Promise.race([
+        fbDb.ref(fbUserPath).remove().then(()=>true),
+        new Promise(r=>setTimeout(()=>r(false),4000))
+      ]);
+    }catch(e){cloudOk=false;console.warn('Не удалось очистить облако:',e);}
+  }
+
+  // 2. IndexedDB: сначала очищаем хранилище (надёжно), затем пробуем удалить базу целиком.
+  if(idb){
+    try{
+      await new Promise((res,rej)=>{
+        const tx=idb.transaction('d','readwrite');
+        tx.objectStore('d').clear();
+        tx.oncomplete=res;tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error);
+      });
+    }catch(e){console.warn('IDB clear:',e);}
+    try{idb.close();}catch(e){}
+    idb=null;
+    await new Promise(res=>{
+      let done=false;const fin=()=>{if(!done){done=true;res();}};
+      try{const r=indexedDB.deleteDatabase('DtreeDB');r.onsuccess=r.onerror=r.onblocked=fin;}catch(e){fin();}
+      setTimeout(fin,1500); // если другая вкладка держит базу, не ждём вечно — хранилище уже пусто
+    });
+  }
+
+  // 3. localStorage: оба ключа данных (dtree_syncid намеренно остаётся, см. выше) +
+  //    маркер, запрещающий повторный перенос старых данных из FB_LEGACY_PATH.
+  try{
+    localStorage.removeItem(SKEY);
+    localStorage.removeItem(SKEY_LEGACY);
+    localStorage.setItem('dtree_nolegacy','1');
+  }catch(e){}
+
+  if(!cloudOk)alert('Не удалось связаться с облаком: локальные данные стёрты, а облачная копия будет заменена чистым состоянием при следующей синхронизации.');
+
+  // 4. Перезагрузка = «первый запуск на чистом устройстве».
+  location.reload();
 }
 
 function initFirebase(){
@@ -916,7 +1142,7 @@ function buildNode(n){
       const row=document.createElement('div');row.className='cbrow';
       const cb=document.createElement('input');cb.type='checkbox';
       cb.checked=cbObj.checked;
-      cb.addEventListener('change',e=>{e.stopPropagation();cbObj.checked=cb.checked;persist();renderAll();});
+      cb.addEventListener('change',e=>{e.stopPropagation();cbObj.checked=cb.checked;if(cb.checked)sfxCheck();persist();renderAll();}); // v7 (часть 6): звук и в обычных рамках
 
       const lbl=document.createElement('div');lbl.className='cblabel';
       lbl.contentEditable='false';lbl.textContent=cbObj.label||'Галочка '+(i+1);
@@ -1196,6 +1422,7 @@ function updateStatus(){
   document.getElementById('sn').textContent=Object.keys(S.nodes).length;
   document.getElementById('sa').textContent=S.conns.length;
   document.getElementById('st').textContent=Object.keys(S.tables).length;
+  renderPerfectBadge(); // v7: счётчик идеальных дней (обновляется и после прихода данных из Firebase)
 }
 
 // ══════════════════════════════════════════════════
@@ -1251,24 +1478,26 @@ document.getElementById('bTbl').addEventListener('click',()=>{
   });
 });
 
-// v6: показывает временное ненавязчивое сообщение внутри открытой таблицы
-// (используется, когда ретроактивная отметка заблокирована — см. openTable).
-function showTableNotice(ov,text){
-  const n=ov.querySelector('#tblNotice');if(!n)return;
-  n.textContent=text;n.style.display='block';
-  clearTimeout(n._hideT);
-  n._hideT=setTimeout(()=>{n.style.display='none';},4500);
+// Сводка по архиву таблицы (дни старше TBL_KEEP_DAYS): итоги и по годам — сколько раз выполнялась каждая привычка.
+function tableArchiveHtml(tbl){
+  const a=tbl.arch;if(!a||!a.total)return '';
+  const name=id=>{const tk=(tbl.tasks||[]).find(x=>x.id===id);return tk?tk.name:null;};
+  const rows=Object.keys(a.y||{}).sort().reverse().map(y=>{
+    const Y=a.y[y];
+    const per=Object.keys(Y.t||{}).filter(id=>name(id)).map(id=>escHtml(name(id))+' — '+Y.t[id]).join(', ');
+    return `<div style="margin-top:5px"><b>${y}</b>: ${Y.c} отметок в ${Y.d} днях${per?'<br><span style="opacity:.85">'+per+'</span>':''}</div>`;
+  }).join('');
+  return `<details style="margin:8px 0;font-size:12px;color:var(--txt2)"><summary style="cursor:pointer">📦 Архив (старше ${TBL_KEEP_DAYS} дней): <b>${a.total}</b> отметок · лучшая серия <b>${a.best}</b></summary>${rows}</details>`;
 }
-
 function openTable(tid){
   const tbl=S.tables[tid];if(!tbl)return;
   const str=streak(tid);
   const nid=Object.keys(S.nodes).find(id=>S.nodes[id].tableId===tid);
   const total=nid?nodeVal(nid):0;
-  const DAYS=730;// 2 years
+  const DAYS=TBL_KEEP_DAYS;// 2 года; всё старше уходит в архив (часть 7)
   const dates=[];const now=new Date();
   for(let i=0;i<DAYS;i++){const d=new Date(now);d.setDate(d.getDate()-i);dates.push(localKey(d));}
-  dates.forEach(k=>{if(!tbl.entries[k])tbl.entries[k]={};});
+  // v7 (часть 7): пустые {} на 730 дней больше не создаём (они раздували сохранение) — entries читаются безопасно.
 
   const todK=todayKey();
   let thead='<th class="dth">Дата</th>';
@@ -1276,21 +1505,13 @@ function openTable(tid){
   let rows='';
   dates.forEach(dk=>{
     const isTd=dk===todK;
-    // v6: пропущенный день с ещё не отменённым штрафом — либо ещё можно исправить (pending),
-    // либо уже "запечатан" последующей активностью и исправить нельзя (sealed). См. isDaySealed.
-    const isPenalized=S.game.penalizedDays[dk]!==undefined;
-    const sealed=isPenalized&&isDaySealed(dk);
-    const pending=isPenalized&&!sealed;
+    // v7: никаких замочков и блокировок — любой прошлый день можно отметить в любой момент.
     const d=new Date(dk+'T12:00');
     const lbl=d.toLocaleDateString('ru-RU',{day:'numeric',month:'short',year:'numeric',weekday:'short'});
-    const rowCls=[isTd?'today':'',sealed?'row-sealed':'',pending?'row-pending':''].filter(Boolean).join(' ');
-    const mark=sealed?' 🔒':pending?' ⏳':'';
-    const rowTitle=sealed?'День пропущен сознательно (есть более поздние отметки) — исправить нельзя'
-      :pending?'Пропущенный день — отметьте любую галочку, чтобы отменить штраф и получить сундук':'';
-    rows+=`<tr class="${rowCls}"><td class="dtd"${rowTitle?` title="${rowTitle}"`:''}>${lbl}${isTd?' ◀':''}${mark}</td>`;
+    rows+=`<tr class="${isTd?'today':''}"><td class="dtd">${lbl}${isTd?' ◀':''}</td>`;
     tbl.tasks.forEach(tk=>{
-      const chk=tbl.entries[dk][tk.id]||false;
-      rows+=`<td><input type="checkbox" data-d="${dk}" data-t="${tk.id}" ${chk?'checked':''} ${sealed?'disabled':''}></td>`;
+      const chk=(tbl.entries[dk]||{})[tk.id]||false;
+      rows+=`<td><input type="checkbox" data-d="${dk}" data-t="${tk.id}" ${chk?'checked':''}></td>`;
     });
     rows+='</tr>';
   });
@@ -1301,7 +1522,7 @@ function openTable(tid){
       <div><div class="sv">🔥 ${str}</div><div class="sl">дней подряд</div></div>
       <div class="tv">Всего отмечено:<br><b>${total}</b> раз</div>
     </div>
-    <div id="tblNotice" class="tblnotice" style="display:none"></div>
+    ${tableArchiveHtml(tbl)}
     <div class="tscroll"><table><thead><tr>${thead}</tr></thead><tbody>${rows}</tbody></table></div>
     <div class="atrow">
       <input type="text" id="ntkn" placeholder="Название нового столбца…">
@@ -1318,34 +1539,19 @@ function openTable(tid){
       cb.addEventListener('change',()=>{
         const dk=cb.dataset.d,tk=cb.dataset.t;
 
-        // v6: попытка ретроактивно отметить пропущенный (оштрафованный) день.
-        if(cb.checked&&S.game.penalizedDays[dk]!==undefined){
-          if(isDaySealed(dk)){
-            // Случай 2 из ТЗ: после dk уже есть другие отметки — день "запечатан", отменить нельзя.
-            cb.checked=false;
-            showTableNotice(ov,'🔒 Этот день пропущен сознательно — после него уже есть другие отметки, ретроактивно исправить нельзя.');
-            return;
-          }
-          // Случай 1 из ТЗ: после dk активности ещё не было — отменяем штраф и засчитываем день как обычный.
-          sfxCheck();
-          const applied=S.game.penalizedDays[dk];
-          revertPenalty(applied);
-          delete S.game.penalizedDays[dk];
-          if(!tbl.entries[dk])tbl.entries[dk]={};
-          tbl.entries[dk][tk]=true;
-          if(checkPerfectDay(dk)&&!S.game.perfectDays[dk]){
-            S.game.perfectDays[dk]=true;
-            grantChest('perfect:'+dk);
-          }
-          recomputeHistoryFor(dk,true); // v6: пересчитать историческую точку именно за этот день
-          persist(); // recomputeProgress() сам разберётся с лигой/стриками/круглыми числами
-          ov.remove();openTable(tid); // переоткрываем, чтобы обновить стрик/сумму и подсветку строк
-          return;
-        }
-
         if(cb.checked)sfxCheck();
+        // v7 (часть 4): считаем, как изменились очки лиги от этой отметки, и сдвигаем историю от дня dk
+        // (для прошлого дня это и есть «пересчёт точки именно этого дня»; для сегодня — живая точка).
+        const mainId=S.settings.mainNodeId,hasMain=!!(mainId&&S.nodes[mainId]);
+        const before=hasMain?Math.round(nodeVal(mainId)):0;
         if(!tbl.entries[dk])tbl.entries[dk]={};
-        tbl.entries[dk][tk]=cb.checked;persist();renderAll();
+        tbl.entries[dk][tk]=cb.checked;
+        shiftHistoryFrom(dk,(hasMain?Math.round(nodeVal(mainId)):0)-before);
+        // v7 (часть 3): пересчитываем статус ТОЛЬКО этого дня (сегодняшнего или прошлого —
+        // ретроактивная отметка), остальные зафиксированные дни не трогаем. true = действие
+        // пользователя → серия пересчитывается всегда (снимает «замороженное» значение после пропуска).
+        checkAndFixPerfectDay(dk,true);
+        persist();renderAll();
       });
     });
     ov.querySelector('#tclose').onclick=()=>ov.remove();
@@ -1903,20 +2109,26 @@ const EMOJI_POOL=[
 {id:'l031',e:'💠',r:'legendary'}
 ];
 
-// ── Веса редкостей сундуков: Обычный 70% / Редкий 22% / Эпический 7% / Легендарный 1% ──
+// ── Веса редкостей сундуков (v7, часть 5): Обычный 64% / Редкий 26% / Эпический 8% / Легендарный 2% ──
 const RARITY_ORDER=['common','rare','epic','legendary'];
-const RARITY_WEIGHTS={common:0.70,rare:0.22,epic:0.07,legendary:0.01};
+const RARITY_WEIGHTS={common:0.64,rare:0.26,epic:0.08,legendary:0.02};
 const RARITY_LABEL={common:'Обычный',rare:'Редкий',epic:'Эпический',legendary:'Легендарный'};
 /*
-  Расчёт темпа открытия коллекции (почему пул такой большой):
-  Пул содержит 450 эмодзи: ~327 обычных, ~66 редких, ~26 эпических, ~31 легендарный.
-  При активном ежедневном использовании (идеальный день + переходы лиг + стрики +
-  круглые числа) пользователь получает ориентировочно ~1.5 сундука в день, т.е. ~550/год.
-  Чтобы собрать ВСЕ легендарные предметы (задача "собирателя купонов"):
-  ожидаемое число открытий ≈ (L / p_legendary) × H(L), где L=31, p=0.01, H(31)≈4.0
-  → ≈ 31/0.01 × 4.0 ≈ 12 400 открытий ≈ 22+ года при ~550 открытий/год.
-  Обычные и редкие предметы собираются значительно раньше — это нормально и усиливает
-  "охоту" именно за легендарными под конец прогресса.
+  ОБОСНОВАНИЕ ВЕСОВ (часть 5). Пул: 450 эмодзи — 327 обычных, 66 редких, 26 эпических, 31 легендарный.
+  Поток сундуков после переделки: шаг 30 очков (≈ 120 сундуков на 3 600 очков в год, это ~10 отметок
+  привычек в день) + юбилейные числа (≈ 15 в первый год, потом 1–4 в год) + переходы лиг + стрики
+  ≈ 100–250 сундуков в год, типично ~150. Пити-таймера больше нет: легендарные выпадают «честно».
+  Ожидаемое число открытий до полной коллекции редкости (задача «собирателя купонов»):
+  N ≈ (K / p) × H(K), где K — число эмодзи редкости, p — её вес, H — гармоническое число.
+    легендарные: K=31, p=0.02 → 31/0.02 × 4.03 ≈ 6 250 открытий ≈ 40 лет при ~150 в год (≈ 25 лет при
+                 250 в год); очередной легендарный в среднем раз в 50 открытий ≈ раз в 4 месяца;
+    эпические:   K=26, p=0.08 → ≈ 1 250 открытий ≈ 8 лет;
+    редкие:      K=66, p=0.26 → ≈ 1 200 открытий ≈ 8 лет;
+    обычные:     K=327, p=0.64 → ≈ 3 250 открытий ≈ 22 года (длинный «хвост» последних повторок).
+  Значит, интерес держится десятилетиями, а все легендарные нельзя выбить слишком рано даже при
+  очень активной игре. Вес 1% (как было раньше) при новом, более скромном потоке растянул бы сбор
+  легендарных на 80+ лет — это уже «никогда», поэтому взято 2%. Если сундуков окажется больше или
+  меньше — достаточно поменять RARITY_WEIGHTS: проценты в окне сундуков считаются из них же.
 */
 
 // ══════════════════════════════════════════════════
@@ -1965,58 +2177,101 @@ function daysSince(dateKey){
 }
 
 // ══════════════════════════════════════════════════
-//  ШТРАФЫ ЗА ПРОПУЩЕННЫЕ ДНИ
-// ══════════════════════════════════════════════════
-// Возвращает фактически применённый штраф (может быть меньше pen, если упёрлись в 0) —
-// это значение сохраняется в S.game.penalizedDays[dateKey], чтобы позже можно было
-// отменить ЭТОТ КОНКРЕТНЫЙ штраф ровно на ту же величину (симметричный откат).
-function applyPenalty(){
-  const mainId=S.settings.mainNodeId;
-  const pen=S.settings.penalty||0;
-  if(!mainId||!S.nodes[mainId]||pen<=0)return 0;
-  const raw=nodeVal(mainId);
-  const oldAccum=S.game.penaltyAccum;
-  let newAccum=oldAccum+pen;
-  if(raw-newAccum<0)newAccum=raw; // очки не уходят в минус, только до 0
-  S.game.penaltyAccum=newAccum;
-  return newAccum-oldAccum;
-}
-// Отменяет ранее применённый штраф за конкретный день (симметрично applyPenalty).
-function revertPenalty(amount){
-  if(amount>0)S.game.penaltyAccum=Math.max(0,S.game.penaltyAccum-amount);
-}
-
-// v6: "запечатан" ли пропущенный день afterDateKey — т.е. есть ли в ЛЮБОЙ таблице
-// хотя бы одна реальная отметка (galочка=true) на дату СТРОГО позже afterDateKey.
-// Если да — пользователь уже "вернулся" и продолжил, значит пропуск был сознательным,
-// и ретроактивно закрыть afterDateKey больше нельзя (см. ТЗ, случай 2).
-// Важно: сравниваем именно наличие ОТМЕЧЕННЫХ галочек, а не самих ключей entries —
-// пустые {} записи создаются для всех дат автоматически при каждом открытии таблицы
-// (см. openTable), поэтому голое наличие ключа не говорит о реальной активности.
-function isDaySealed(afterDateKey){
-  return Object.values(S.tables).some(t=>{
-    const entries=t.entries||{};
-    return Object.keys(entries).some(dk=>{
-      if(dk<=afterDateKey)return false;
-      const day=entries[dk];
-      return day&&Object.values(day).some(Boolean);
-    });
-  });
-}
-
-// ══════════════════════════════════════════════════
 //  ИДЕАЛЬНЫЙ ДЕНЬ
 // ══════════════════════════════════════════════════
-function checkPerfectDay(dateKey){
+/*
+  МОДЕЛЬ (v7, часть 3): день «фиксируется» как идеальный / неидеальный, а не пересчитывается
+  по всей истории каждый раз. Храним три вещи в S.game:
+    perfectDays   — множество дат, признанных идеальными ({dateKey:true});
+    perfectTotal  — сколько их всего (меняется только на +1 / −1 при смене статуса одного дня);
+    perfectStreak — текущая серия подряд.
+  Статус дня пересчитывается только в трёх случаях:
+    1) сегодняшний день — «живой»: при каждом persist() (а значит, при любом изменении галочек
+       туда-обратно в течение дня);
+    2) догоняющая проверка при запуске (dailyTick → processMissedDay) «закрывает» дни с прошлого визита;
+    3) ретроактивная отметка: пользователь поставил / снял галочку на прошлый день — пересчитывается
+       только этот один день, ранее зафиксированные дни не трогаются.
+  Пропущенные дни отдельно не хранятся: отсутствие даты в perfectDays = «не идеален».
+  Серию при открытии приложения после пропуска мы НЕ обнуляем — она остаётся старым значением,
+  пока пользователь что-то не отметит (тогда она пересчитывается от сегодня / вчера назад).
+
+  Почему так:
+    • O(1) для счётчиков вместо перебора всех таблиц по всем датам на каждом persist();
+    • не нужно хранить жизненный цикл таблиц (createdAt / deletedAt): день оценивается по тем
+      таблицам, которые существовали в момент фиксации;
+    • добавление / удаление таблицы не переписывает историю задним числом — это предсказуемо;
+    • если когда-нибудь понадобится явный «пересчёт истории» с учётом новых таблиц — его можно
+      добавить отдельной кнопкой в настройках (сейчас не требуется).
+  Оговорка: «живой» сегодняшний день оценивается по текущим таблицам, поэтому добавление таблицы
+  или столбца сегодня может снять статус «идеален» с сегодняшнего дня (и вернуть, если удалить).
+  Ретроактивная отметка прошлого дня тоже оценивает этот день по ТЕКУЩИМ таблицам.
+  Множество perfectDays растёт на одну короткую запись в день (~13 байт). Часть 7: дни старше окна таблицы
+  (730 дней) вычёркиваются из множества, а серию на границе помнит S.game.perfectArch = {to, tail}
+  (см. archivePerfectDays); общий счётчик perfectTotal хранится отдельно и не меняется.
+*/
+
+// Идеален ли день dateKey по ТЕКУЩЕМУ набору таблиц (чистая проверка, состояние не меняет).
+// Правила: таблиц нет вообще — не идеален; все привычки всех таблиц отмечены — идеален.
+// Решение по неоднозначности: таблица без столбцов пропускается, но если привычек нет ни в одной
+// таблице — день не идеален (иначе пустая таблица давала бы «идеальный» день без единого действия).
+function isDayFullyChecked(dateKey){
   const tids=Object.keys(S.tables);
   if(!tids.length)return false;
-  return tids.every(tid=>{
+  let habits=0;
+  for(const tid of tids){
     const t=S.tables[tid];
-    if(!t.tasks||!t.tasks.length)return true;
-    const day=t.entries[dateKey];
+    if(!t.tasks||!t.tasks.length)continue;
+    const day=t.entries&&t.entries[dateKey];
     if(!day)return false;
-    return t.tasks.every(tk=>day[tk.id]);
-  });
+    for(const tk of t.tasks){
+      if(!day[tk.id])return false;
+      habits++;
+    }
+  }
+  return habits>0;
+}
+
+// Длина непрерывной серии идеальных дней по множеству days: от сегодня назад, если сегодня
+// идеален; иначе со вчера. На первом неидеальном дне останавливаемся.
+// v7 (часть 7): arch = {to,tail} — серия продолжается в архивной части (дни ≤ to вычеркнуты из множества).
+function calcPerfectStreakFor(days,arch){
+  const today=todayKey();
+  let k=days[today]?today:ymdAddDays(today,-1);
+  let n=0;
+  while(n<100000){
+    if(arch&&k<=arch.to){if(k===arch.to)n+=arch.tail||0;break;}
+    if(!days[k])break;
+    n++;k=ymdAddDays(k,-1);
+  }
+  return n;
+}
+function recalcPerfectStreak(){S.game.perfectStreak=calcPerfectStreakFor(S.game.perfectDays,S.game.perfectArch);}
+
+// Фиксирует статус ОДНОГО дня и обновляет perfectDays / perfectTotal / perfectStreak.
+// userAction=true — вызов из обработчика галочки: серия пересчитывается в любом случае.
+// Иначе (persist / догоняющая проверка) серия пересчитывается только если статус дня изменился —
+// поэтому после долгого пропуска она не «схлопывается» сама при открытии приложения.
+// Возвращает true, если статус дня изменился.
+function checkAndFixPerfectDay(dateKey,userAction){
+  const G=S.game;
+  if(dateKey>todayKey())return false; // будущие дни не оцениваем
+  const now=isDayFullyChecked(dateKey);
+  const was=!!G.perfectDays[dateKey];
+  let changed=false;
+  if(now&&!was){G.perfectDays[dateKey]=true;G.perfectTotal=(G.perfectTotal||0)+1;changed=true;}
+  else if(!now&&was){delete G.perfectDays[dateKey];G.perfectTotal=Math.max(0,(G.perfectTotal||0)-1);changed=true;}
+  if(changed||userAction)recalcPerfectStreak();
+  return changed;
+}
+
+// Обновляет счётчик в правом верхнем углу главного экрана (читает только сохранённые значения).
+function renderPerfectBadge(){
+  const st=document.getElementById('pf-streak'),sub=document.getElementById('pf-sub');
+  if(!st||!sub||!S.game)return;
+  const n=S.game.perfectStreak||0,tot=S.game.perfectTotal||0;
+  st.textContent='🔥 '+n.toLocaleString('ru-RU');
+  st.classList.toggle('zero',n===0);
+  sub.textContent='идеальных дней подряд · всего '+tot.toLocaleString('ru-RU');
 }
 
 // ══════════════════════════════════════════════════
@@ -2053,35 +2308,15 @@ function competitorScore(c){
 // ══════════════════════════════════════════════════
 //  ЕЖЕДНЕВНАЯ ДОГОНЯЮЩАЯ ПРОВЕРКА (запускается 1 раз при старте приложения)
 // ══════════════════════════════════════════════════
-// v6: копим суммарный штраф/число пропущенных дней за весь прогон dailyTick(), чтобы показать
-// ОДИН эффект после старта (см. init()), а не серию одинаковых "ударов" для каждого дня отдельно.
-let _pendingPenaltyNotice=null;
 function processMissedDay(dateKey){
-  const hasTables=Object.keys(S.tables).length>0;
-  const anyChecked=Object.values(S.tables).some(t=>{
-    const day=t.entries[dateKey];return day&&Object.values(day).some(Boolean);
-  });
-  if(hasTables&&!anyChecked){
-    const applied=applyPenalty();
-    // Запоминаем: за этот день был штраф, и его ЕЩЁ МОЖНО отменить ретроактивной отметкой
-    // (см. isDaySealed/toggle-обработчик в openTable) — пока после dateKey нет активности.
-    if(applied>0){
-      S.game.penalizedDays[dateKey]=applied;
-      if(!_pendingPenaltyNotice)_pendingPenaltyNotice={total:0,days:0};
-      _pendingPenaltyNotice.total+=applied;_pendingPenaltyNotice.days++;
-    }
-  }
   recomputeHistoryFor(dateKey,false); // v6: догоняющая точка истории (не затирает уже честно записанную)
-  if(checkPerfectDay(dateKey)&&!S.game.perfectDays[dateKey]){
-    S.game.perfectDays[dateKey]=true;
-    grantChest('perfect:'+dateKey);
-  }
+  checkAndFixPerfectDay(dateKey,false); // v7: фиксируем статус дня (без сундука; серию не трогаем, если статус не изменился)
   rollCompetitorEvents(dateKey);
 }
 function dailyTick(){
   const today=todayKey();
   if(!S.game.lastDailyCheck){
-    // Первый запуск v5: не наказываем за прошлое "до приложения", начинаем со вчера
+    // Первый запуск: прошлое "до приложения" не обрабатываем, начинаем со вчера
     S.game.lastDailyCheck=ymdAddDays(today,-1);
     return;
   }
@@ -2093,6 +2328,7 @@ function dailyTick(){
     cursor=ymdAddDays(cursor,1);
     guard++;
   }
+  compactHistory(); // v7 (часть 4): старые дневные точки сворачиваются в недели / месяцы / годы
 }
 
 // ══════════════════════════════════════════════════
@@ -2106,24 +2342,33 @@ function grantChest(reason){
       {cls:'fx-toast-chest',duration:2000});
   }
 }
+// Шаг «сундук за очки» и стрик-вехи вынесены в константы — на них опираются и выдача, и окно сундуков.
+const CHEST_STEP=30;
+const STREAK_MILESTONES=[7,30,90,365];
+// Юбилейные / круглые числа очков: 10, 25, 50, 75, затем на каждую декаду (100…1000…10000…) множители
+// 1, 1.5, 2, 2.5, 3.5, 5, 7.5 → 100, 150, 200, 250, 350, 500, 750, 1000, 1500 … Интервалы растут вместе с
+// очками (шаг всегда ≈ ×1.4–1.5), поэтому в начале сундуков много, а позже они редкие и «весомые».
+// Это ОТДЕЛЬНЫЙ триггер от шага в 30 очков: на совпадающих числах (например, 150) выдаются оба сундука.
+const JUBILEE_BASE=[10,25,50,75],JUBILEE_MULT=[1,1.5,2,2.5,3.5,5,7.5];
+function nextJubilee(v){ // наименьшее юбилейное число строго больше v
+  for(const x of JUBILEE_BASE)if(x>v)return x;
+  for(let p=100;p<1e15;p*=10)for(const m of JUBILEE_MULT){const x=Math.round(p*m);if(x>v)return x;}
+  return Infinity;
+}
+function escHtml(t){return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function chestReasonText(reason){
   if(reason.startsWith('league:'))return '🎖 Переход в новую лигу';
-  if(reason.startsWith('round:'))return '💯 Круглое число очков: '+reason.split(':')[1];
+  if(reason.startsWith('step:'))return '⭐ Каждые '+CHEST_STEP+' очков: '+reason.split(':')[1];
+  if(reason.startsWith('jubilee:'))return '💯 Юбилейное число очков: '+reason.split(':')[1];
+  if(reason.startsWith('round:'))return '💯 Круглое число очков: '+reason.split(':')[1]; // сундуки старого формата
   if(reason.startsWith('streak:'))return '🔥 Стрик привычки: '+reason.split(':')[1]+' дней подряд';
-  if(reason.startsWith('perfect:'))return '✅ Идеальный день: '+reason.split(':')[1];
   return '📦 Сундук';
 }
+// Без пити-таймера: чистый розыгрыш по RARITY_WEIGHTS (v7, часть 5).
 function rollRarity(){
-  if(S.game.opensSinceLegendary>=199){S.game.opensSinceLegendary=0;return 'legendary';}
   const r=Math.random();let acc=0;
-  for(const k of RARITY_ORDER){
-    acc+=RARITY_WEIGHTS[k];
-    if(r<=acc){
-      if(k==='legendary')S.game.opensSinceLegendary=0;else S.game.opensSinceLegendary++;
-      return k;
-    }
-  }
-  S.game.opensSinceLegendary++;return 'common';
+  for(const k of RARITY_ORDER){acc+=RARITY_WEIGHTS[k];if(r<acc)return k;}
+  return 'common';
 }
 function pickEmojiByRarity(rarity){
   const pool=EMOJI_POOL.filter(e=>e.r===rarity);
@@ -2150,15 +2395,36 @@ function openChestById(chestId){
   const item=pickEmojiByRarity(rarity);
   S.collection[item.id]=(S.collection[item.id]||0)+1;
   persist();
+  sfxChestOpen(rarity); // v7 (часть 6): отдельный звук открытия, зависит от редкости
   showChestOpenAnimation(item,rarity);
 }
 function renderChestsModal(){
-  const list=S.game.chests.length
-    ?S.game.chests.map(c=>`<div class="chest-list-item"><span class="ce">📦</span><span class="ci">${chestReasonText(c.reason)}</span><button class="mbtn ok" data-id="${c.id}" style="padding:6px 12px">Открыть</button></div>`).join('')
+  const G=S.game,mainId=S.settings.mainNodeId,hasMain=!!(mainId&&S.nodes[mainId]);
+  const cur=hasMain?Math.round(nodeVal(mainId)):0;
+  const num=v=>v.toLocaleString('ru-RU');
+  const list=G.chests.length
+    ?G.chests.map(c=>`<div class="chest-list-item"><span class="ce">📦</span><span class="ci">${chestReasonText(c.reason)}</span><button class="mbtn ok" data-id="${c.id}" style="padding:6px 12px">Открыть</button></div>`).join('')
     :'<p style="color:var(--txt2);font-size:13px">Нет сундуков. Выполняйте привычки, бейте стрики и поднимайтесь в лиге!</p>';
-  const ov=modal(`<h2>📦 <span>Сундуки (${S.game.chests.length})</span></h2>
+  // ── правила выдачи с прогрессом ──
+  const lvl=levelForScore(cur);
+  const stepDone=Math.max(0,Math.min(CHEST_STEP,cur-G.grantedStepScore));
+  const nj=nextJubilee(G.grantedJubilee);
+  let jubPreview=[],jv=0;for(let i=0;i<10;i++){jv=nextJubilee(jv);jubPreview.push(jv);}
+  const streakRows=Object.keys(S.tables).map(tid=>{
+    const got=G.grantedStreaks[tid]||[],nx=STREAK_MILESTONES.find(m=>!got.includes(m));
+    return `<div class="rule-sub">${escHtml(S.tables[tid].name)}: ${nx?`<b>${Math.min(streak(tid),nx)}/${nx}</b>`:'все награды получены ✓'}</div>`;
+  }).join('')||'<div class="rule-sub">Пока нет таблиц привычек</div>';
+  const rules=`
+    <div class="rule-row">🎖 <b>За новую лигу</b> — ${chestsForLevelUp(lvl+1)} шт. (+1 за каждые 10 уровней, максимум 10)<div class="rule-sub">Следующая лига: <b>${num(leagueThreshold(lvl+1))}</b> очков (сейчас ${num(cur)})</div></div>
+    <div class="rule-row">⭐ <b>За каждые ${CHEST_STEP} очков</b><div class="rule-sub">До следующего сундука: <b>${stepDone}/${CHEST_STEP}</b></div></div>
+    <div class="rule-row">💯 <b>За юбилейные числа очков:</b> ${jubPreview.join(', ')} … (дальше интервалы растут)<div class="rule-sub">Следующая цель: <b>${num(nj)}</b> очков (сейчас ${num(cur)})</div></div>
+    <div class="rule-row">🔥 <b>За стрики привычек:</b> ${STREAK_MILESTONES.join(', ')} дней подряд${streakRows}</div>`;
+  const pct=v=>(Math.round(v*1000)/10).toLocaleString('ru-RU');
+  const chances=RARITY_ORDER.map(k=>`<div class="chance-row"><span class="rarity-tag ${k}">${RARITY_LABEL[k]}</span><b>${pct(RARITY_WEIGHTS[k])}%</b><span class="chance-n">${EMOJI_POOL.filter(e=>e.r===k).length} эмодзи</span></div>`).join('');
+  modal(`<h2>📦 <span>Сундуки (${G.chests.length})</span></h2>
     <div>${list}</div>
-    <div class="pity-note">Пити-таймер: открытий без легендарного — ${S.game.opensSinceLegendary}/200</div>
+    <div class="rules-h">📋 Как получить сундук</div>${rules}
+    <div class="rules-h">🎲 Шансы редкостей при открытии</div>${chances}
     <div class="brow" style="margin-top:12px"><button class="mbtn cancel" id="chClose">Закрыть</button></div>`,ovv=>{
     ovv.querySelector('#chClose').onclick=()=>ovv.remove();
     ovv.querySelectorAll('button[data-id]').forEach(b=>{
@@ -2199,15 +2465,14 @@ function renderCollectionModal(){
 function renderLeagueBar(){
   const mainId=S.settings.mainNodeId;
   const hasMain=!!(mainId&&S.nodes[mainId]);
-  const raw=hasMain?nodeVal(mainId):0;
-  const eff=Math.max(0,raw-S.game.penaltyAccum);
-  const lvl=levelForScore(eff);
+  const curScore=hasMain?nodeVal(mainId):0; // очки лиги = сырое значение главной рамки
+  const lvl=levelForScore(curScore);
   const cur=leagueThreshold(lvl),next=leagueThreshold(lvl+1);
-  const pct=next>cur?Math.min(100,Math.round((eff-cur)/(next-cur)*100)):100;
+  const pct=next>cur?Math.min(100,Math.round((curScore-cur)/(next-cur)*100)):100;
   document.getElementById('lg-icon').textContent=hasMain?leagueIcon(lvl):'🌱';
   document.getElementById('lg-name').textContent=hasMain?leagueName(lvl):'Выбрать рамку';
   document.getElementById('lg-fill').style.width=(hasMain?pct:0)+'%';
-  document.getElementById('lg-pts').textContent=hasMain?(eff.toLocaleString('ru-RU')+' / '+next.toLocaleString('ru-RU')):'⚙ настройка';
+  document.getElementById('lg-pts').textContent=hasMain?(curScore.toLocaleString('ru-RU')+' / '+next.toLocaleString('ru-RU')):'⚙ настройка';
   const dayEl=document.getElementById('lg-day');
   dayEl.textContent=S.game.startDate?('День '+daysSince(S.game.startDate)):'🏁 Старт';
   const n=S.game.chests.length;
@@ -2215,77 +2480,145 @@ function renderLeagueBar(){
   const chestEl=document.getElementById('lg-chest');
   if(n>0){badge.style.display='block';badge.textContent=n>99?'99+':n;chestEl.classList.add('has');}
   else{badge.style.display='none';chestEl.classList.remove('has');}
+  renderPerfectBadge(); // v7: счётчик идеальных дней в правом верхнем углу
 }
 
 // ══════════════════════════════════════════════════
 //  ЗВУК (Web Audio API, программно, без файлов) — v6, часть 3/3
 // ══════════════════════════════════════════════════
-let _actx=null;
+/*
+  v7 (часть 6): звук переработан. Вместо «8-битных» прямоугольных тонов — мягкие синтезированные
+  тембры: у каждой ноты несколько гармоник (колокольчик / пэд) и два слегка расстроенных голоса
+  (хорус через detune), экспоненциальные огибающие, общий компрессор и небольшая «комната»
+  (реверберация из сгенерированного импульса, без аудиофайлов — приложение остаётся офлайн-автономным).
+  Звук играет только после первого жеста пользователя (политика браузеров); если контекст «уснул»,
+  перед нотой он будит себя сам (раньше ноты молча терялись).
+*/
+let _actx=null,_mix=null,_audioUnlocked=false;
 function getActx(){
   if(_actx)return _actx;
   try{_actx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){return null;}
   return _actx;
 }
 // Браузеры не дают звуку играть до первого жеста пользователя — разблокируем при первом
-// тапе/клике/нажатии клавиши где угодно в документе (без этого штраф при старте молчал бы,
-// а первый чек/сундук/лига могли бы прозвучать не с первого раза).
-function unlockAudio(){const ctx=getActx();if(ctx&&ctx.state==='suspended')ctx.resume().catch(()=>{});}
-['pointerdown','keydown'].forEach(ev=>document.addEventListener(ev,unlockAudio,{passive:true}));
+// касании / клике / нажатии клавиши (touchend и click — для старых iOS, где pointerdown не считается жестом).
+function unlockAudio(){
+  _audioUnlocked=true;
+  const ctx=getActx();if(ctx&&ctx.state!=='running')ctx.resume().catch(()=>{});
+}
+['pointerdown','touchend','click','keydown'].forEach(ev=>document.addEventListener(ev,unlockAudio,{passive:true}));
 
-function soundEnabled(){return S.settings.soundOn!==false;}
-// Один программный "тон" 8-битного вида: осциллятор + простая ADSR-огибающая громкости.
+function soundEnabled(){return S.settings.soundOn!==false;} // настройка «🔊 Звуковые эффекты» гасит ВСЕ sfx*()
+// Общая шина: dry → мягкий лимитер → выход; send → свёртка (реверберация) → лимитер.
+// ВАЖНО: раньше здесь стоял DynamicsCompressorNode (порог −18 дБ). При проверке в Chromium выяснилось, что он
+// «съедает» короткие транзиенты: клик на галочке проседал почти в 4 раза (≈ −30 дБFS) и был едва слышен — даже
+// при ratio=1 (то есть дело не в пороге, а во внутреннем упреждении/сглаживании ноды). Поведение компрессора
+// к тому же заметно отличается между браузерами (Chrome / Safari / Firefox). Поэтому он заменён на
+// детерминированный «мягкий лимитер»: WaveShaper с кривой tanh(x). Малые уровни проходят почти без изменений,
+// а пики не могут превысить tanh(1) ≈ 0.76 — клиппинг невозможен даже на плотном аккорде из 60 осцилляторов.
+function getMix(ctx){
+  if(_mix&&_mix.ctx===ctx)return _mix;
+  const lim=ctx.createWaveShaper(),n=2048,curve=new Float32Array(n);
+  for(let i=0;i<n;i++)curve[i]=Math.tanh(i/(n-1)*2-1); // вход [−1;1] → tanh
+  lim.curve=curve;lim.oversample='2x';lim.connect(ctx.destination);
+  const dry=ctx.createGain();dry.gain.value=0.9;dry.connect(lim);
+  const len=Math.floor(ctx.sampleRate*1.3),buf=ctx.createBuffer(2,len,ctx.sampleRate);
+  for(let c=0;c<2;c++){const d=buf.getChannelData(c);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.6);}
+  const conv=ctx.createConvolver();conv.buffer=buf;
+  const wet=ctx.createGain();wet.gain.value=0.35;conv.connect(wet);wet.connect(lim);
+  return (_mix={ctx,dry,send:conv});
+}
+// Выполнить fn(ctx), когда аудиоконтекст запущен (будим его при необходимости, но только после жеста).
+function withCtx(fn){
+  if(!_audioUnlocked)return;
+  const ctx=getActx();if(!ctx)return;
+  if(ctx.state==='running')fn(ctx);else ctx.resume().then(()=>fn(ctx)).catch(()=>{});
+}
+// Нота: o.partials — гармоники [[множитель частоты, громкость]], o.detune — расстройка хоруса в центах (0 = один голос),
+// o.sus — держать громкость до конца ноты (пэд), иначе плавное затухание (колокольчик), o.wet — доля реверберации, o.lp — lowpass.
 function playTone(freq,startAt,dur,o){
   o=o||{};
-  const ctx=getActx();if(!ctx||ctx.state!=='running')return;
-  const type=o.type||'square',vol=o.vol!=null?o.vol:0.09,attack=o.attack!=null?o.attack:0.008,release=o.release!=null?o.release:0.08;
-  const t0=ctx.currentTime+startAt;
-  const osc=ctx.createOscillator(),gain=ctx.createGain();
-  osc.type=type;osc.frequency.setValueAtTime(freq,t0);
-  gain.gain.setValueAtTime(0,t0);
-  gain.gain.linearRampToValueAtTime(vol,t0+attack);
-  gain.gain.setValueAtTime(vol,t0+Math.max(attack,dur-release));
-  gain.gain.linearRampToValueAtTime(0,t0+dur);
-  osc.connect(gain);gain.connect(ctx.destination);
-  osc.start(t0);osc.stop(t0+dur+0.02);
+  withCtx(ctx=>{
+    const m=getMix(ctx),t0=ctx.currentTime+startAt;
+    const vol=o.vol!=null?o.vol:0.1,atk=o.attack!=null?o.attack:0.008,rel=o.release!=null?o.release:0.25;
+    const det=o.detune!=null?o.detune:7,partials=o.partials||[[1,1]];
+    const env=ctx.createGain();
+    env.gain.setValueAtTime(0.0001,t0);
+    env.gain.exponentialRampToValueAtTime(vol,t0+atk);
+    if(o.sus)env.gain.setValueAtTime(vol,t0+Math.max(atk,dur-rel));
+    env.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+    let out=env;
+    if(o.lp){const f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=o.lp;env.connect(f);out=f;}
+    out.connect(m.dry);
+    const send=ctx.createGain();send.gain.value=o.wet!=null?o.wet:0.3;out.connect(send);send.connect(m.send);
+    const voices=det?[-det,det]:[0];
+    partials.forEach(pp=>voices.forEach(dc=>{
+      const osc=ctx.createOscillator(),g=ctx.createGain();
+      osc.type=o.type||'sine';osc.frequency.setValueAtTime(freq*pp[0],t0);osc.detune.value=dc;
+      g.gain.value=pp[1]/voices.length;
+      osc.connect(g);g.connect(env);osc.start(t0);osc.stop(t0+dur+0.05);
+    }));
+  });
 }
-// Короткий "шумовой стук" (белый шум через фильтр) — для неприятного звука штрафа.
-function playThud(startAt,dur,vol){
-  const ctx=getActx();if(!ctx||ctx.state!=='running')return;
-  vol=vol||0.09;
-  const bufSize=Math.max(1,Math.floor(ctx.sampleRate*dur));
-  const buf=ctx.createBuffer(1,bufSize,ctx.sampleRate);
-  const data=buf.getChannelData(0);
-  for(let i=0;i<bufSize;i++)data[i]=(Math.random()*2-1)*(1-i/bufSize);
-  const t0=ctx.currentTime+startAt;
-  const src=ctx.createBufferSource();src.buffer=buf;
-  const filt=ctx.createBiquadFilter();filt.type='lowpass';filt.frequency.value=650;
-  const gain=ctx.createGain();
-  gain.gain.setValueAtTime(vol,t0);
-  gain.gain.exponentialRampToValueAtTime(0.001,t0+dur);
-  src.connect(filt);filt.connect(gain);gain.connect(ctx.destination);
-  src.start(t0);
+// «Шорох» — шум через полосовой фильтр с ползущей частотой (скрип крышки сундука).
+function playSweep(startAt,dur,f0,f1,vol){
+  withCtx(ctx=>{
+    const m=getMix(ctx),t0=ctx.currentTime+startAt,n=Math.floor(ctx.sampleRate*dur);
+    const buf=ctx.createBuffer(1,n,ctx.sampleRate),d=buf.getChannelData(0);
+    for(let i=0;i<n;i++)d[i]=Math.random()*2-1;
+    const src=ctx.createBufferSource();src.buffer=buf;
+    const bp=ctx.createBiquadFilter();bp.type='bandpass';bp.Q.value=2.2;
+    bp.frequency.setValueAtTime(f0,t0);bp.frequency.exponentialRampToValueAtTime(f1,t0+dur);
+    const g=ctx.createGain();
+    g.gain.setValueAtTime(0.0001,t0);g.gain.exponentialRampToValueAtTime(vol,t0+dur*0.85);g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+    src.connect(bp);bp.connect(g);g.connect(m.dry);src.start(t0);
+  });
 }
-// Галочка: короткий, тихий, приятный "клик" — не должен надоедать при частом использовании.
+const SND_BELL=[[1,1],[2.01,0.3],[3.02,0.1]]; // стеклянный колокольчик (чуть негармоничные обертоны)
+const SND_PAD=[[1,1],[2,0.3]];                // мягкий пэд
+// Иерархия громкости (пик после лимитера, проверено офлайн-рендером): галочка ≈ 0.13 < сундук ≈ 0.2 <
+// открытие сундука / новая лига ≈ 0.4 — частый звук самый тихий, редкие события — самые заметные.
+// Галочка (в таблицах И в обычных рамках): тихий стеклянный «тик»; высота случайно из пентатоники,
+// чтобы частые клики не надоедали.
 function sfxCheck(){
   if(!soundEnabled())return;
-  playTone(740,0,0.09,{type:'square',vol:0.06,attack:0.004,release:0.05});
+  const f=[784,880,988,1175][Math.floor(Math.random()*4)];
+  playTone(f,0,0.26,{partials:SND_BELL,vol:0.13,attack:0.004,detune:4,wet:0.2});
 }
-// Сундук: приятная короткая восходящая трель (до-ми-соль).
+// Сундук получен: быстрое восходящее арпеджио до-ми-соль-до.
+// Троттлинг: при большом скачке очков (массовая отметка, импорт) за один пересчёт может выдаться 5–10 сундуков
+// сразу — без ограничения они давали 10 наложенных арпеджио (≈ 200 осцилляторов) и звучали как каша.
+// Теперь повторный вызов в течение 600 мс молчит (тосты при этом показываются как раньше).
+let _lastChestSfx=-1e9;
 function sfxChest(){
   if(!soundEnabled())return;
-  [523.25,659.25,783.99].forEach((f,i)=>playTone(f,i*0.075,0.16,{type:'square',vol:0.08,attack:0.006,release:0.09}));
+  const now=performance.now();if(now-_lastChestSfx<600)return;_lastChestSfx=now;
+  [523.25,659.25,783.99,1046.5].forEach((f,i)=>playTone(f,i*0.07,0.42,{partials:SND_BELL,vol:0.15,attack:0.005,wet:0.35}));
 }
-// Новая лига: более долгая и торжественная восходящая мелодия (до-ми-соль-до-ми, мягкий тембр).
+// Сундук ОТКРЫТ: шорох во время тряски (650 мс до появления награды) → тёплый бас и аккорд на раскрытии →
+// искры. Чем реже предмет, тем торжественнее: больше искр, дольше звучит аккорд, больше «зала» (реверберации);
+// у эпического и легендарного добавляется светлая октава сверху (shimmer).
+const SND_OPEN={
+  common:   {sparks:0,dur:1.0,wet:0.40,shimmer:false},
+  rare:     {sparks:2,dur:1.2,wet:0.45,shimmer:false},
+  epic:     {sparks:4,dur:1.5,wet:0.50,shimmer:true},
+  legendary:{sparks:7,dur:2.0,wet:0.60,shimmer:true}
+};
+function sfxChestOpen(rarity){
+  if(!soundEnabled())return;
+  const c=SND_OPEN[rarity]||SND_OPEN.common;
+  playSweep(0,0.6,260,2200,0.35);
+  playTone(130.81,0.62,c.dur,{type:'triangle',partials:[[1,1],[2,0.35]],vol:0.16,attack:0.02,sus:1,release:c.dur*0.55,wet:0.3});
+  [523.25,659.25,783.99,1046.5].forEach((f,i)=>playTone(f,0.65+i*0.03,c.dur+0.2,{type:'triangle',partials:SND_PAD,vol:0.09,attack:0.02,sus:1,release:c.dur*0.6,wet:c.wet}));
+  if(c.shimmer)[2093,2637].forEach((f,i)=>playTone(f,0.7+i*0.05,c.dur+0.4,{partials:SND_BELL,vol:0.05,attack:0.03,sus:1,release:c.dur*0.7,wet:0.7}));
+  const spark=[1318.5,1568,1760,2093,2349.3,2637,3136];
+  for(let i=0;i<c.sparks;i++)playTone(spark[i],0.8+i*0.08,0.5,{partials:SND_BELL,vol:0.08,attack:0.004,wet:0.4});
+}
+// Новая лига: торжественное восхождение и долгий светлый аккорд.
 function sfxLeague(){
   if(!soundEnabled())return;
-  [523.25,659.25,783.99,1046.5,1318.5].forEach((f,i)=>playTone(f,i*0.11,0.32,{type:'triangle',vol:0.09,attack:0.01,release:0.2}));
-}
-// Штраф: неприятный нисходящий "пилообразный" звук поражения + шумовой стук.
-function sfxPenalty(){
-  if(!soundEnabled())return;
-  playTone(190,0,0.22,{type:'sawtooth',vol:0.07,attack:0.004,release:0.16});
-  playTone(130,0.06,0.30,{type:'sawtooth',vol:0.06,attack:0.004,release:0.22});
-  playThud(0,0.18,0.05);
+  [523.25,659.25,783.99,1046.5,1318.5].forEach((f,i)=>playTone(f,i*0.12,0.7,{type:'triangle',partials:SND_PAD,vol:0.16,attack:0.01,sus:1,release:0.4,wet:0.4}));
+  [261.63,523.25,783.99,1046.5,1318.5].forEach(f=>playTone(f,0.62,1.6,{type:'triangle',partials:SND_PAD,vol:0.12,attack:0.03,sus:1,release:1.0,wet:0.5}));
 }
 
 // ══════════════════════════════════════════════════
@@ -2304,39 +2637,12 @@ function showToast(html,opts){
   setTimeout(()=>{el.classList.remove('show');setTimeout(()=>el.remove(),300);},opts.duration||2200);
 }
 function chestReasonLabel(reason){
-  if(reason.startsWith('perfect:'))return'Идеальный день!';
   if(reason.startsWith('streak:'))return'Серия дней подряд!';
+  if(reason.startsWith('step:'))return'Очки растут!';
+  if(reason.startsWith('jubilee:'))return'Юбилейное число!';
   if(reason.startsWith('round:'))return'Круглая сумма очков!';
   return'Сундук получен!';
 }
-// Штраф применяется только во время фоновой догоняющей проверки при старте (см. dailyTick) —
-// звук в этот момент браузер может ещё не пропустить (нет жеста пользователя), поэтому визуал
-// показываем всегда, а несколько дней штрафа за раз копим в одно уведомление, а не заваливаем
-// пользователя серией одинаковых "ударов" сразу при открытии.
-function showPenaltyEffect(total,days){
-  sfxPenalty();
-  if(!fxEnabled())return;
-  const bar=document.getElementById('leaguebar');
-  if(bar){
-    bar.classList.remove('penalty-flash');void bar.offsetWidth;
-    bar.classList.add('penalty-flash');
-    setTimeout(()=>bar.classList.remove('penalty-flash'),950);
-  }
-  const pts=document.getElementById('lg-pts');
-  if(pts){
-    const r=pts.getBoundingClientRect();
-    const num=document.createElement('div');
-    num.className='fx-floatnum';
-    num.textContent='−'+total.toLocaleString('ru-RU');
-    num.style.left=Math.max(4,r.left)+'px';
-    num.style.top=(r.top-10)+'px';
-    document.body.appendChild(num);
-    setTimeout(()=>num.remove(),1400);
-  }
-  showToast('<span style="font-size:22px">💢</span><div><b>Штраф: −'+total.toLocaleString('ru-RU')+' очков</b><br>Пропущено дней без единой отметки: '+days+'</div>',
-    {cls:'fx-toast-penalty',duration:3400});
-}
-
 // ══════════════════════════════════════════════════
 //  АНИМАЦИЯ ПЕРЕХОДА В НОВУЮ ЛИГУ
 // ══════════════════════════════════════════════════
@@ -2375,22 +2681,101 @@ function showLevelUp(level,chestCount){
 // ══════════════════════════════════════════════════
 //  ИСТОРИЯ ОЧКОВ (для статистики)
 // ══════════════════════════════════════════════════
-// Пересчитывает и сохраняет эффективный балл (raw-penaltyAccum) в S.game.history[dateKey].
-// forceOverwrite=true — использовать для "сегодня" (значение живое, меняется в течение дня)
-// и для дня, который только что был ретроактивно исправлен (см. openTable).
-// forceOverwrite=false — использовать при догоняющей проверке (processMissedDay), чтобы НЕ
-// затирать уже честно записанное значение для дня, который был активным.
+/*
+  ХРАНЕНИЕ (v7, часть 4): S.game.history не растёт бесконечно. Значение точки — очки лиги на КОНЕЦ
+  периода (как цена закрытия на бирже), слои от свежих к старым:
+    d — по дням    {YYYY-MM-DD: score}  последние HIST_DAY_KEEP дней (≈ 13 мес.);
+    w — по неделям {понедельник: score} до HIST_WEEK_KEEP дней назад (≈ 5 лет);
+    m — по месяцам {YYYY-MM: score}     до HIST_MONTH_KEEP дней назад (≈ 20 лет);
+    y — по годам   {YYYY: score}        всё, что старше.
+  Всего ≈ 400 + 260 + 180 + N записей — размер ограничен.
+  fz — скаляры уже свёрнутых дней: max (максимум дневной дельты), sum (сумма дельт), cnt (число дельт),
+  last / ld (очки и дата последнего свёрнутого дня). При сворачивании пик дня попадает в fz.max ДО
+  того, как день «размажется» по неделе. Максимум и среднее за всё время = fz + точные дневные точки
+  (см. historyStats): среднее = running_sum / count, максимум обновляется при появлении нового.
+  Почему не один голый скаляр: день с галочкой задним числом меняет дельту и вниз тоже, а откатить
+  максимум без данных нельзя — поэтому для последних ~13 месяцев берём точные дни.
+*/
+const HIST_DAY_KEEP=400,HIST_WEEK_KEEP=1825,HIST_MONTH_KEEP=7300;
+
+// Пересчитывает и сохраняет очки лиги (значение главной рамки) в слое дней для dateKey.
+// forceOverwrite=true — для «сегодня» (значение живое, меняется в течение дня);
+// forceOverwrite=false — при догоняющей проверке, чтобы не затирать уже честно записанное значение.
 function recomputeHistoryFor(dateKey,forceOverwrite){
   const mainId=S.settings.mainNodeId;
   if(!mainId||!S.nodes[mainId])return;
-  if(!forceOverwrite&&S.game.history[dateKey]!==undefined)return;
-  const eff=Math.max(0,nodeVal(mainId)-S.game.penaltyAccum);
-  S.game.history[dateKey]=Math.round(eff);
+  const h=S.game.history;
+  if(dateKey<ymdAddDays(todayKey(),-HIST_DAY_KEEP))return; // день уже в свёрнутом слое — дневную точку не воскрешаем
+  if(!forceOverwrite&&h.d[dateKey]!==undefined)return;
+  h.d[dateKey]=Math.round(nodeVal(mainId));
 }
-// Отсортированный по дате массив [{date,score}] — сырые (неагрегированные) точки истории.
+
+// Сворачивает слои: дни → недели → месяцы → годы. Идемпотентна, вызывается из dailyTick().
+function compactHistory(){
+  const h=S.game.history,fz=h.fz,today=todayKey();
+  const cutD=ymdAddDays(today,-HIST_DAY_KEEP);
+  Object.keys(h.d).sort().forEach(k=>{
+    if(k>=cutD)return;
+    const sc=h.d[k];
+    if(fz.last!==null){ // дельта этого дня относительно предыдущего свёрнутого → в скаляры
+      const dl=sc-fz.last;
+      if(fz.max===null||dl>fz.max)fz.max=dl;
+      fz.sum+=dl;fz.cnt++;
+    }
+    fz.last=sc;fz.ld=k;
+    h.w[bucketKey(k,'week')]=sc; // ключи идут по возрастанию даты → в неделе остаётся последнее значение
+    delete h.d[k];
+  });
+  const cutW=ymdAddDays(today,-HIST_WEEK_KEEP);
+  Object.keys(h.w).sort().forEach(k=>{if(k<cutW){h.m[bucketKey(k,'month')]=h.w[k];delete h.w[k];}});
+  const cutM=ymdAddDays(today,-HIST_MONTH_KEEP).slice(0,7);
+  Object.keys(h.m).sort().forEach(k=>{if(k<cutM){h.y[k.slice(0,4)]=h.m[k];delete h.m[k];}});
+}
+
+// Ретроактивная отметка: очки лиги на КОНЕЦ дня dateKey и всех следующих дней меняются на diff
+// (отметка считается во всех значениях, начиная с её дня). Сегодняшнюю точку не трогаем — она живая.
+// Для уже свёрнутых дней максимум fz.max не пересчитываем (день-носитель пика неизвестен) — это
+// редкий случай отметки старше ~13 месяцев.
+function shiftHistoryFrom(dateKey,diff){
+  if(!diff||dateKey>=todayKey())return;
+  const h=S.game.history,fz=h.fz;
+  const add=(o,from)=>Object.keys(o).forEach(k=>{if(k>=from)o[k]+=diff;});
+  add(h.d,dateKey);add(h.w,bucketKey(dateKey,'week'));add(h.m,bucketKey(dateKey,'month'));add(h.y,bucketKey(dateKey,'year'));
+  if(fz.ld!==null&&dateKey<=fz.ld){fz.last+=diff;fz.sum+=diff;}
+}
+
+// Максимум и среднее дневного прироста очков за всё время: скаляры свёрнутой части + точные дни.
+function historyStats(){
+  const h=S.game.history,fz=h.fz;
+  let max=fz.max,sum=fz.sum,cnt=fz.cnt,prev=fz.last;
+  Object.keys(h.d).sort().forEach(k=>{
+    const sc=h.d[k];
+    if(prev!==null){const dl=sc-prev;if(max===null||dl>max)max=dl;sum+=dl;cnt++;}
+    prev=sc;
+  });
+  return {max:max===null?0:max,avg:cnt?sum/cnt:0,cnt};
+}
+
+// Отсортированный по дате массив [{date,score}] — все слои в одном ряду. Даты сжатых точек —
+// конец периода, но не позже дня перед началом более свежего слоя (чтобы ряд строго возрастал).
 function getHistoryPoints(){
-  const h=S.game.history||{};
-  return Object.keys(h).sort().map(date=>({date,score:h[date]}));
+  const h=S.game.history;
+  const endOf={
+    w:k=>ymdAddDays(k,6),
+    m:k=>{const p=k.split('-');return localKey(new Date(+p[0],+p[1],0));},
+    y:k=>k+'-12-31'
+  };
+  const fresh=Object.keys(h.d).sort().map(date=>({date,score:h.d[date]}));
+  let limit=fresh.length?fresh[0].date:ymdAddDays(todayKey(),1);
+  const older=[]; // от новых к старым
+  ['w','m','y'].forEach(t=>{
+    Object.keys(h[t]).sort().reverse().forEach(k=>{
+      let d=endOf[t](k);
+      if(d>=limit)d=ymdAddDays(limit,-1);
+      older.push({date:d,score:h[t][k]});limit=d;
+    });
+  });
+  return older.reverse().concat(fresh);
 }
 
 // ══════════════════════════════════════════════════
@@ -2400,23 +2785,29 @@ function recomputeProgress(){
   let changed=false;
   const mainId=S.settings.mainNodeId;
   if(mainId&&S.nodes[mainId]){
-    const raw=nodeVal(mainId);
-    const eff=Math.max(0,raw-S.game.penaltyAccum);
+    const curScore=nodeVal(mainId);
     recomputeHistoryFor(todayKey(),true); // v6: живая точка "сегодня" в историю очков
-    const lvl=levelForScore(eff);
+    const lvl=levelForScore(curScore);
     if(lvl>S.game.lastLeagueLevel){
       const n=chestsForLevelUp(lvl);
       for(let i=0;i<n;i++)grantChest('league:'+lvl);
       S.game.lastLeagueLevel=lvl;changed=true;
       showLevelUp(lvl,n);
     }
+    // Триггер 1: каждые CHEST_STEP очков — сундук. Порог только растёт (high-water mark): если очки упали
+    // (сняли галочки) и снова выросли, повторной выдачи нет.
     let guard=0;
-    while(eff-S.game.grantedRoundScore>=100&&guard<1000){
-      S.game.grantedRoundScore+=100;grantChest('round:'+S.game.grantedRoundScore);
+    while(curScore-S.game.grantedStepScore>=CHEST_STEP&&guard<1000){
+      S.game.grantedStepScore+=CHEST_STEP;grantChest('step:'+S.game.grantedStepScore);
       changed=true;guard++;
     }
+    // Триггер 2 (отдельный): попадание в юбилейное / круглое число — ровно один сундук за число.
+    guard=0;
+    for(let nx=nextJubilee(S.game.grantedJubilee);curScore>=nx&&guard<100;nx=nextJubilee(S.game.grantedJubilee),guard++){
+      S.game.grantedJubilee=nx;grantChest('jubilee:'+nx);changed=true;
+    }
   }
-  const milestones=[7,30,90,365];
+  const milestones=STREAK_MILESTONES;
   Object.keys(S.tables).forEach(tid=>{
     const str=streak(tid);
     if(!S.game.grantedStreaks[tid])S.game.grantedStreaks[tid]=[];
@@ -2426,10 +2817,8 @@ function recomputeProgress(){
       }
     });
   });
-  const tk=todayKey();
-  if(checkPerfectDay(tk)&&!S.game.perfectDays[tk]){
-    S.game.perfectDays[tk]=true;grantChest('perfect:'+tk);changed=true;
-  }
+  // v7: сегодняшний день «живой» — оцениваем при каждом persist(); прошлые дни здесь не трогаем.
+  if(checkAndFixPerfectDay(todayKey(),false))changed=true;
   renderLeagueBar();
   return changed;
 }
@@ -2442,18 +2831,6 @@ const CHART_H=230;          // общая высота SVG графика
 const CHART_TOP=26,CHART_BOT=40,CHART_L=16,CHART_R=16;
 const CHART_RECENT_DAYS=45; // сколько последних дней показываем поточечно (не агрегируя)
 const MONTH_SHORT=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
-
-// Идеальных дней подряд (считаем от сегодня назад, как streak() для таблиц привычек).
-function perfectStreak(){
-  let s=0;const d=new Date();
-  for(let i=0;i<9999;i++){
-    const k=localKey(d);
-    if(!S.game.perfectDays[k])break;
-    s++;d.setDate(d.getDate()-1);
-  }
-  return s;
-}
-function perfectTotal(){return Object.keys(S.game.perfectDays).length;}
 
 function shortDateLabel(dateKey){
   const d=new Date(dateKey+'T12:00:00');
@@ -2477,7 +2854,7 @@ function bucketLabel(key,granularity){
 }
 // v6: последние recentDays дней — по дням; всё, что старше — агрегируется по неделям
 // (до ~4 месяцев), затем по месяцам (до ~2 лет), затем по годам. Это держит график
-// читаемым при любом объёме истории, не удаляя из S.game.history ни одной записи.
+// читаемым при любом объёме истории (само хранилище сворачивается отдельно — compactHistory()).
 function aggregateForChart(points,recentDays){
   if(!points.length)return [];
   const cutoff=ymdAddDays(todayKey(),-recentDays);
@@ -2503,23 +2880,17 @@ function aggregateForChart(points,recentDays){
   return out.concat(recent.map(p=>({date:p.date,score:p.score,label:shortDateLabel(p.date),n:1,agg:false})));
 }
 // Дельты между соседними (возможно агрегированными) точками графика роста очков.
+// Для агрегированной точки (неделя / месяц / год) значение = РОСТ ЗА ПЕРИОД / ЧИСЛО ДНЕЙ, то есть
+// средний прирост за день внутри периода: так столбцы остаются сравнимыми с пунктирными линиями
+// «максимум за день» и «среднее за день» (иначе недельная сумма всегда «перепрыгивала» бы максимум).
 function buildDeltaSeries(aggPoints){
   const out=[];
   for(let i=1;i<aggPoints.length;i++){
-    out.push({date:aggPoints[i].date,label:aggPoints[i].label,value:aggPoints[i].score-aggPoints[i-1].score,agg:aggPoints[i].agg});
+    const a=aggPoints[i-1],b=aggPoints[i];
+    const days=Math.max(1,Math.round((new Date(b.date+'T12:00:00')-new Date(a.date+'T12:00:00'))/86400000));
+    out.push({date:b.date,label:b.label,value:(b.score-a.score)/days,agg:b.agg});
   }
   return out;
-}
-// Накопленное среднее дельты — как менялся средний прогресс по мере накопления данных.
-function buildRunningAvgSeries(deltaSeries){
-  let sum=0;
-  return deltaSeries.map((d,i)=>{sum+=d.value;return {date:d.date,label:d.label,value:sum/(i+1),agg:d.agg};});
-}
-// Средний прогресс за день по ВСЕЙ (неагрегированной) истории — телескопическая сумма
-// дельт равна (последнее−первое)/(n−1), поэтому считаем напрямую, без агрегации.
-function overallAvgProgress(rawPoints){
-  if(rawPoints.length<2)return 0;
-  return (rawPoints[rawPoints.length-1].score-rawPoints[0].score)/(rawPoints.length-1);
 }
 
 // ── SVG-графики (без внешних библиотек, чтобы не раздувать офлайн-кэш) ──
@@ -2565,12 +2936,20 @@ function svgBarChart(points,opts){
   const plotH=CHART_H-CHART_TOP-CHART_BOT;
   const vals=points.map(p=>p.value);
   let minV=Math.min(0,...vals),maxV=Math.max(0,...vals);
+  (opts.hLines||[]).forEach(l=>{minV=Math.min(minV,l.v);maxV=Math.max(maxV,l.v);}); // пунктирные линии всегда в кадре
   if(minV===maxV){minV-=1;maxV+=1;}
   const range=maxV-minV;
   minV-=range*0.08;maxV+=range*0.16;
   const xOf=i=>CHART_L+34+i*CHART_POINT_GAP;
   const yOf=v=>CHART_TOP+plotH-((v-minV)/(maxV-minV))*plotH;
   const y0=yOf(0);
+  // Пунктирные горизонтальные линии (максимум / среднее) с подписью у правого края:
+  // первая подпись над линией, вторая под ней, чтобы не налезали друг на друга.
+  const hSvg=(opts.hLines||[]).map((l,i)=>{
+    const y=yOf(l.v);
+    return `<line x1="${CHART_L}" y1="${y.toFixed(1)}" x2="${w-CHART_R}" y2="${y.toFixed(1)}" stroke="${l.col}" stroke-width="1.5" stroke-dasharray="6,4"/>`+
+      `<text x="${w-CHART_R-2}" y="${(i===0?y-4:y+12).toFixed(1)}" class="chpt-val" fill="${l.col}" text-anchor="end">${l.label}</text>`;
+  }).join('');
   const fmt=opts.fmt||(v=>(v>0?'+':'')+Math.round(v).toLocaleString('ru-RU'));
   const barW=Math.min(28,CHART_POINT_GAP-10);
   let bars='',labels='',dateLabels='';
@@ -2585,81 +2964,253 @@ function svgBarChart(points,opts){
   });
   return `<svg viewBox="0 0 ${w} ${CHART_H}" width="${w}" height="${CHART_H}" class="statchart" preserveAspectRatio="xMinYMid meet">
     <line x1="${CHART_L}" y1="${y0.toFixed(1)}" x2="${w-CHART_R}" y2="${y0.toFixed(1)}" class="chart-zeroline"/>
-    ${bars}${labels}${dateLabels}
+    ${hSvg}${bars}${labels}${dateLabels}
   </svg>`;
 }
 
-function renderStatsModal(){
-  const mainId=S.settings.mainNodeId;
-  const hasMain=!!(mainId&&S.nodes[mainId]);
-  const pStreak=perfectStreak(),pTotal=perfectTotal();
-  const raw=hasMain?getHistoryPoints():[];
-  const hasEnoughData=raw.length>=2;
-  const avgProgress=hasEnoughData?overallAvgProgress(raw):0;
+/*
+  ПОЛНОЭКРАННЫЙ РЕЖИМ ГРАФИКОВ (v7, часть 4б). Весь выбранный диапазон вписывается в ширину экрана,
+  горизонтального скролла нет. Порядок такой:
+    1) окно = последние N дней (или от первой точки для «Всё время»), заканчивается сегодняшним днём;
+    2) шаг точки выбирается по длине окна: до 100 дн. — день, до 400 — неделя, до 2000 — месяц,
+       до 7400 — квартал, дальше — год (всегда 40–100 столбцов/точек, читается на телефоне);
+    3) значение точки = очки на конец периода («последняя известная точка не позже конца периода»),
+       поэтому грубые слои хранилища (недели / месяцы / годы) не искажают картину;
+    4) где данных ещё нет (окно начинается раньше первой записи) — серая зона «нет данных».
+  Столбец Δ = средний прирост за день внутри периода (как в окне статистики), чтобы он был
+  сопоставим с пунктирными линиями «максимум» и «среднее» за день.
+*/
+const FS_SCALES=[['1w','1 нед',7],['2w','2 нед',14],['1m','1 мес',30],['3m','3 мес',91],['6m','6 мес',182],
+  ['1y','1 год',365],['5y','5 лет',1826],['10y','10 лет',3652],['20y','20 лет',7305],['all','Всё время',0]];
+const FS_GRAN_NAME={day:'день',week:'неделя',month:'месяц',quarter:'квартал',year:'год'};
+let _fsScale='1m',_fsType='score'; // выбранный масштаб запоминается между открытиями
 
-  let bodyHtml;
-  if(!hasMain){
-    bodyHtml='<p class="stat-empty">Сначала выберите «Главную рамку» в ⚙ Настройках — без неё не считаются ни лига, ни очки, ни статистика.</p>';
-  }else if(!hasEnoughData){
-    bodyHtml='<p class="stat-empty">Пока недостаточно данных — история очков ведётся с сегодняшнего дня (версия 6). Загляните через несколько дней: тут появятся графики роста очков, дневного прогресса и скользящего среднего.</p>';
-  }else{
-    const agg=aggregateForChart(raw,CHART_RECENT_DAYS);
-    const deltaSeries=buildDeltaSeries(agg);
-    const avgSeries=buildRunningAvgSeries(deltaSeries);
-
-    const eff=Math.max(0,nodeVal(mainId)-S.game.penaltyAccum);
-    const lvl=levelForScore(eff);
-    const nextThr=leagueThreshold(lvl+1);
-    const remaining=Math.max(0,nextThr-eff);
-
-    const scoreChart=svgLineChart(agg.map(p=>({date:p.date,label:p.label,value:p.score,agg:p.agg})),{
-      color:'var(--acc)',extraLine:nextThr,fmt:v=>Math.round(v).toLocaleString('ru-RU')
-    });
-    const deltaChart=svgBarChart(deltaSeries,{fmt:v=>(v>0?'+':'')+Math.round(v).toLocaleString('ru-RU')});
-    const avgChart=svgLineChart(avgSeries,{
-      colorFn:v=>v>=0?'var(--grn)':'var(--red)',zeroLine:true,fmt:v=>(v>0?'+':'')+v.toFixed(1)
-    });
-
-    bodyHtml=`
-      <div class="chartsec">
-        <div class="chartsec-h">📈 Рост очков лиги</div>
-        <div class="chart-scroll" id="scChart">${scoreChart}</div>
-        <div class="chart-note">До следующей лиги (${leagueIcon(lvl+1)} ${leagueName(lvl+1)}) осталось <b>${remaining.toLocaleString('ru-RU')}</b> очков</div>
-      </div>
-      <div class="chartsec">
-        <div class="chartsec-h">📊 Прогресс (Δ к предыдущей точке)</div>
-        <div class="chart-scroll" id="dChart">${deltaChart}</div>
-      </div>
-      <div class="chartsec">
-        <div class="chartsec-h">📉 Скользящее среднее прогресса</div>
-        <div class="chart-scroll" id="aChart">${avgChart}</div>
-      </div>
-      <div class="chart-note">* — агрегированная точка (неделя / месяц / год), а не один день</div>`;
+function fmtDelta(v){return (v>0?'+':'')+(Math.round(v*10)/10).toLocaleString('ru-RU');} // одна цифра после запятой, если нужна
+function fsNum(v){const a=Math.abs(v);return a>=1e6?(v/1e6).toFixed(1)+'M':a>=1e4?Math.round(v/1e3)+'k':Math.round(v).toLocaleString('ru-RU');}
+function fsKey(date,g){
+  if(g==='day')return date;
+  if(g==='quarter')return date.slice(0,4)+'-Q'+(Math.floor((+date.slice(5,7)-1)/3)+1);
+  return bucketKey(date,g);
+}
+function fsLabel(key,g){
+  if(g==='day'||g==='week')return shortDateLabel(key);
+  if(g==='month')return bucketLabel(key,'month');
+  if(g==='quarter')return key.slice(5)+' '+key.slice(2,4); // «Q2 26»
+  return key;
+}
+// Ряд точек для масштаба: [{key,label,end,value,delta}], value/delta = null там, где данных нет.
+function fsSeries(scaleKey){
+  const pts=getHistoryPoints(),today=todayKey();
+  const sc=FS_SCALES.find(x=>x[0]===scaleKey)||FS_SCALES[2];
+  const start=sc[2]?ymdAddDays(today,1-sc[2]):(pts.length?pts[0].date:ymdAddDays(today,-6));
+  const gap=(a,b)=>Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/86400000);
+  const days=gap(start,today)+1;
+  const g=days<=100?'day':days<=400?'week':days<=2000?'month':days<=7400?'quarter':'year';
+  const bs=[];let cur=null;
+  for(let d=start,i=0;d<=today&&i<20000;d=ymdAddDays(d,1),i++){
+    const k=fsKey(d,g);
+    if(!cur||cur.key!==k){cur={key:k,label:fsLabel(k,g),end:d};bs.push(cur);}
+    cur.end=d;
   }
+  let j=0,last=null;
+  const valAt=date=>{while(j<pts.length&&pts[j].date<=date){last=pts[j].score;j++;}return last;}; // вызывается по возрастанию дат
+  let prevEnd=ymdAddDays(start,-1),prevV=valAt(prevEnd);
+  bs.forEach(b=>{
+    b.value=valAt(b.end);
+    b.delta=(b.value!==null&&prevV!==null)?(b.value-prevV)/Math.max(1,gap(prevEnd,b.end)):null;
+    prevV=b.value;prevEnd=b.end;
+  });
+  return {buckets:bs,gran:g};
+}
+// SVG, вписанный в w×h: type 'score' — линия, 'delta' — столбцы; opts: {fmt, hLines:[{v,col,label}]}.
+function svgFitChart(type,bs,w,h,opts){
+  opts=opts||{};
+  const L=46,R=12,T=14,B=28,pw=w-L-R,ph=h-T-B,n=bs.length,key=type==='delta'?'delta':'value';
+  const vals=bs.map(b=>b[key]).filter(v=>v!==null);
+  if(!vals.length)return '<div class="chart-empty">Нет данных за выбранный период.</div>';
+  let mn=Math.min(...vals),mx=Math.max(...vals);
+  if(type==='delta'){mn=Math.min(mn,0);mx=Math.max(mx,0);}
+  (opts.hLines||[]).forEach(l=>{mn=Math.min(mn,l.v);mx=Math.max(mx,l.v);});
+  if(mn===mx){mn-=1;mx+=1;}
+  const pad=(mx-mn)*0.08;mn-=pad;mx+=pad;
+  const slot=pw/n,xOf=i=>L+slot*(i+0.5),yOf=v=>T+ph-((v-mn)/(mx-mn))*ph;
+  let o=`<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" class="statchart">`;
+  for(let t=0;t<=4;t++){ // сетка и подписи оси Y
+    const v=mn+(mx-mn)*t/4,y=yOf(v).toFixed(1);
+    o+=`<line x1="${L}" y1="${y}" x2="${w-R}" y2="${y}" stroke="var(--border)" opacity=".5"/><text x="${L-5}" y="${(+y+3).toFixed(1)}" class="chpt-date" fill="var(--txt2)" text-anchor="end">${opts.fmt(v)}</text>`;
+  }
+  let run=-1; // серые зоны «нет данных»
+  for(let i=0;i<=n;i++){
+    const isNull=i<n&&bs[i][key]===null;
+    if(isNull&&run<0)run=i;
+    if(!isNull&&run>=0){
+      const x=L+slot*run,ww=slot*(i-run);
+      o+=`<rect x="${x.toFixed(1)}" y="${T}" width="${ww.toFixed(1)}" height="${ph}" fill="var(--txt2)" opacity=".13"/>`;
+      if(ww>90)o+=`<text x="${(x+ww/2).toFixed(1)}" y="${(T+ph/2).toFixed(1)}" class="chpt-date" fill="var(--txt2)" text-anchor="middle">нет данных</text>`;
+      run=-1;
+    }
+  }
+  if(type==='delta')o+=`<line x1="${L}" y1="${yOf(0).toFixed(1)}" x2="${w-R}" y2="${yOf(0).toFixed(1)}" class="chart-zeroline"/>`;
+  (opts.hLines||[]).forEach((l,i)=>{ // пунктир: максимум / среднее
+    const y=yOf(l.v);
+    o+=`<line x1="${L}" y1="${y.toFixed(1)}" x2="${w-R}" y2="${y.toFixed(1)}" stroke="${l.col}" stroke-width="1.5" stroke-dasharray="6,4"/>`+
+       `<text x="${w-R-2}" y="${(i===0?y-4:y+12).toFixed(1)}" class="chpt-val" fill="${l.col}" text-anchor="end">${l.label}</text>`;
+  });
+  if(type==='delta'){
+    const bw=Math.max(1,slot*0.72),y0=yOf(0);
+    bs.forEach((b,i)=>{
+      if(b.delta===null)return;
+      const y=yOf(b.delta);
+      o+=`<rect x="${(xOf(i)-bw/2).toFixed(1)}" y="${Math.min(y,y0).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1,Math.abs(y-y0)).toFixed(1)}" fill="${b.delta>=0?'var(--grn)':'var(--red)'}"><title>${b.label}: ${opts.fmt(b.delta)}</title></rect>`;
+    });
+  }else{
+    let path='',pen=false,lastI=-1;
+    bs.forEach((b,i)=>{
+      if(b.value===null){pen=false;return;}
+      path+=(pen?'L':'M')+xOf(i).toFixed(1)+' '+yOf(b.value).toFixed(1)+' ';pen=true;lastI=i;
+    });
+    o+=`<path d="${path.trim()}" fill="none" stroke="var(--acc)" stroke-width="2" stroke-linejoin="round"/>`;
+    bs.forEach((b,i)=>{
+      if(b.value===null||(n>60&&i!==lastI))return; // на плотных графиках точка остаётся только у «сегодня»
+      o+=`<circle cx="${xOf(i).toFixed(1)}" cy="${yOf(b.value).toFixed(1)}" r="${i===lastI?4:2.6}" fill="var(--acc)"><title>${b.label}: ${opts.fmt(b.value)}</title></circle>`;
+    });
+  }
+  const k=Math.min(n,5); // подписи оси X (первая прижата влево, последняя — вправо)
+  for(let j=0;j<k;j++){
+    const i=k===1?0:Math.round(j*(n-1)/(k-1));
+    const anchor=j===0?'start':(j===k-1?'end':'middle'),x=j===0?L:(j===k-1?w-R:xOf(i));
+    o+=`<text x="${x.toFixed(1)}" y="${h-10}" class="chpt-date" fill="var(--txt2)" text-anchor="${anchor}">${bs[i].label}</text>`;
+  }
+  return o+'</svg>';
+}
+function renderFsChart(){
+  const ov=document.getElementById('fsov');if(!ov)return;
+  const box=ov.querySelector('#fsChart'),foot=ov.querySelector('#fsFoot');
+  const mainId=S.settings.mainNodeId;
+  if(!(mainId&&S.nodes[mainId])||getHistoryPoints().length<2){box.innerHTML='<div class="chart-empty">Пока недостаточно данных.</div>';foot.innerHTML='';return;}
+  const {buckets,gran}=fsSeries(_fsScale);
+  const st=historyStats(),C_MAX='#f59e0b',C_AVG='#22d3ee';
+  const w=Math.max(260,box.clientWidth),h=Math.max(160,box.clientHeight);
+  const gapNote=buckets.some(b=>b.value===null)?' Серая зона — данных за этот период ещё нет.':'';
+  if(_fsType==='delta'){
+    box.innerHTML=svgFitChart('delta',buckets,w,h,{fmt:fmtDelta,hLines:[
+      {v:st.max,col:C_MAX,label:'макс '+fmtDelta(st.max)},{v:st.avg,col:C_AVG,label:'сред '+fmtDelta(st.avg)}]});
+    foot.innerHTML=`<span style="color:${C_MAX}">╌╌ максимум за всё время: <b>${fmtDelta(st.max)}</b></span> &nbsp; <span style="color:${C_AVG}">╌╌ среднее за всё время: <b>${fmtDelta(st.avg)}</b></span><br>Точка — ${FS_GRAN_NAME[gran]} (средний прирост за день).${gapNote}`;
+  }else{
+    box.innerHTML=svgFitChart('score',buckets,w,h,{fmt:fsNum});
+    const cur=nodeVal(mainId),lvl=levelForScore(cur),rem=Math.max(0,leagueThreshold(lvl+1)-cur);
+    foot.innerHTML=`Сейчас <b style="color:var(--yel)">${Math.round(cur).toLocaleString('ru-RU')}</b> очков · до лиги ${leagueIcon(lvl+1)} ${leagueName(lvl+1)} осталось <b style="color:var(--yel)">${rem.toLocaleString('ru-RU')}</b><br>Точка — ${FS_GRAN_NAME[gran]}.${gapNote}`;
+  }
+}
+function closeChartFullscreen(){
+  const el=document.getElementById('fsov');if(el)el.remove();
+  window.removeEventListener('resize',renderFsChart);
+}
+function openChartFullscreen(type){
+  closeChartFullscreen();
+  _fsType=type==='delta'?'delta':'score';
+  const el=document.createElement('div');el.id='fsov';el.className='fsov';
+  el.innerHTML=`<div class="fs-top"><div class="fs-title">${_fsType==='delta'?'📊 Прогресс за день (Δ)':'📈 Рост очков лиги'}</div><button class="fs-x" id="fsClose">✕</button></div>
+    <div class="fs-scales">${FS_SCALES.map(x=>`<button class="fs-sc${x[0]===_fsScale?' on':''}" data-sc="${x[0]}">${x[1]}</button>`).join('')}</div>
+    <div class="fs-chart" id="fsChart"></div><div class="fs-foot" id="fsFoot"></div>`;
+  document.body.appendChild(el);
+  el.querySelector('#fsClose').onclick=closeChartFullscreen;
+  el.querySelectorAll('.fs-sc').forEach(b=>b.onclick=()=>{
+    _fsScale=b.dataset.sc;
+    el.querySelectorAll('.fs-sc').forEach(x=>x.classList.toggle('on',x===b));
+    renderFsChart();
+  });
+  window.addEventListener('resize',renderFsChart); // поворот экрана / смена размера окна
+  renderFsChart();
+}
 
-  const ov=modal(`
-    <h2>📊 <span>Статистика</span></h2>
+// HTML содержимого модалки статистики (числа + 2 графика). Вынесен отдельно, чтобы
+// refreshStatsIfOpen() мог перерисовывать его «на лету» при любом изменении данных.
+function statsBodyHtml(){
+  const mainId=S.settings.mainNodeId;
+  if(!(mainId&&S.nodes[mainId])){
+    return '<p class="stat-empty">Сначала выберите «Главную рамку» в ⚙ Настройках — без неё не считаются ни лига, ни очки, ни статистика.</p>';
+  }
+  const raw=getHistoryPoints();
+  if(raw.length<2){
+    return '<p class="stat-empty">Пока недостаточно данных — история очков ведётся с сегодняшнего дня. Загляните через несколько дней: тут появятся графики роста очков и дневного прогресса.</p>';
+  }
+  const st=historyStats();
+  const agg=aggregateForChart(raw,CHART_RECENT_DAYS);
+  const deltaSeries=buildDeltaSeries(agg);
+  const fmtD=fmtDelta;
+  const curScore=nodeVal(mainId);
+  const lvl=levelForScore(curScore);
+  const nextThr=leagueThreshold(lvl+1);
+  const remaining=Math.max(0,nextThr-curScore);
+  const C_MAX='#f59e0b',C_AVG='#22d3ee';
+  const scoreChart=svgLineChart(agg.map(p=>({date:p.date,label:p.label,value:p.score,agg:p.agg})),{
+    color:'var(--acc)',extraLine:nextThr,fmt:v=>Math.round(v).toLocaleString('ru-RU')
+  });
+  const deltaChart=svgBarChart(deltaSeries,{fmt:fmtD,hLines:[
+    {v:st.max,col:C_MAX,label:'макс '+fmtD(st.max)},
+    {v:st.avg,col:C_AVG,label:'сред '+fmtD(st.avg)}
+  ]});
+  return `
     <div class="statgrid">
       <div class="statbig">
-        <div class="statbig-num">🔥 ${pStreak}</div>
-        <div class="statbig-lbl">идеальных дней подряд</div>
-        <div class="statsmall">всего идеальных дней: ${pTotal}</div>
-      </div>
-      ${hasEnoughData?`<div class="statbig">
-        <div class="statbig-num" style="color:${avgProgress>=0?'var(--grn)':'var(--red)'}">${avgProgress>=0?'+':''}${avgProgress.toFixed(1)}</div>
+        <div class="statbig-num" style="color:${st.avg>=0?'var(--grn)':'var(--red)'}">${fmtD(st.avg)}</div>
         <div class="statbig-lbl">средний прогресс / день</div>
-      </div>`:''}
+      </div>
+      <div class="statbig">
+        <div class="statbig-num" style="color:${C_MAX}">${fmtD(st.max)}</div>
+        <div class="statbig-lbl">максимум за день</div>
+      </div>
     </div>
-    ${bodyHtml}
+    <div class="chartsec">
+      <div class="chartsec-h"><span>📈 Рост очков лиги</span><button class="fs-open" data-fs="score" title="На весь экран">⛶</button></div>
+      <div class="chart-scroll" id="scChart">${scoreChart}</div>
+      <div class="chart-note">До следующей лиги (${leagueIcon(lvl+1)} ${leagueName(lvl+1)}) осталось <b>${remaining.toLocaleString('ru-RU')}</b> очков</div>
+    </div>
+    <div class="chartsec">
+      <div class="chartsec-h"><span>📊 Прогресс за день (Δ)</span><button class="fs-open" data-fs="delta" title="На весь экран">⛶</button></div>
+      <div class="chart-scroll" id="dChart">${deltaChart}</div>
+      <div class="chart-note">
+        <span style="color:${C_MAX}">╌╌ максимум за всё время: <b style="color:${C_MAX}">${fmtD(st.max)}</b></span><br>
+        <span style="color:${C_AVG}">╌╌ среднее за всё время: <b style="color:${C_AVG}">${fmtD(st.avg)}</b></span>
+      </div>
+    </div>
+    <div class="chart-note">* — агрегированная точка (неделя / месяц / год); в графике Δ у неё показан средний прирост за день периода</div>`;
+}
+function scrollStatChartsToEnd(root){
+  ['scChart','dChart'].forEach(id=>{ // промотаем графики к самым свежим (правым) точкам
+    const el=root.querySelector('#'+id);
+    if(el)setTimeout(()=>{el.scrollLeft=el.scrollWidth;},60);
+  });
+}
+// Если модалка статистики открыта — перерисовываем её содержимое (вызывается из persist()).
+// Положение горизонтальной прокрутки сохраняем; если график был промотан до конца — остаёмся на краю.
+function refreshStatsIfOpen(){
+  renderFsChart(); // полноэкранный график (если открыт) тоже обновляется сразу
+  const ov=document.querySelector('.ov[data-stats="1"]');if(!ov)return;
+  const body=ov.querySelector('#statBody');if(!body)return;
+  const keep={};
+  ['scChart','dChart'].forEach(id=>{
+    const el=body.querySelector('#'+id);
+    if(el)keep[id]={x:el.scrollLeft,end:el.scrollLeft+el.clientWidth>=el.scrollWidth-4};
+  });
+  body.innerHTML=statsBodyHtml();
+  ['scChart','dChart'].forEach(id=>{
+    const el=body.querySelector('#'+id);
+    if(el&&keep[id])el.scrollLeft=keep[id].end?el.scrollWidth:keep[id].x;
+  });
+}
+function renderStatsModal(){
+  modal(`
+    <h2>📊 <span>Статистика</span></h2>
+    <div id="statBody">${statsBodyHtml()}</div>
     <div class="brow" style="margin-top:12px">
       <button class="mbtn cancel" id="statClose">Закрыть</button>
     </div>`,ovv=>{
+    ovv.dataset.stats='1';
+    ovv.addEventListener('click',e=>{const b=e.target.closest('[data-fs]');if(b)openChartFullscreen(b.dataset.fs);});
     ovv.querySelector('#statClose').onclick=()=>ovv.remove();
-    // промотаем все графики к самым свежим (правым) точкам
-    ['scChart','dChart','aChart'].forEach(id=>{
-      const el=ovv.querySelector('#'+id);
-      if(el)setTimeout(()=>{el.scrollLeft=el.scrollWidth;},60);
-    });
+    scrollStatChartsToEnd(ovv);
   });
 }
 
@@ -2670,19 +3221,15 @@ function renderSettingsModal(){
   const syncIdVal=fbSyncId||getOrCreateSyncId();
   const fbReady=!!FB_CONFIG.apiKey;
   const ov=modal(`<h2>⚙ <span>Настройки геймификации</span></h2>
-    <div class="f"><label>Главная рамка (лига и штрафы считаются по ней)</label>
+    <div class="f"><label>Главная рамка (лига и очки считаются по ней)</label>
       <select id="setMain">${nodeOpts(S.settings.mainNodeId)}</select></div>
-    <div class="setrow"><label>Штраф за пропущенный день</label><input type="number" id="setPen" value="${S.settings.penalty}" min="0"></div>
     <div class="setrow"><label>Событие конкурентов: минимум</label><input type="number" id="setEvMin" value="${S.settings.eventMin}"></div>
     <div class="setrow"><label>Событие конкурентов: максимум</label><input type="number" id="setEvMax" value="${S.settings.eventMax}"></div>
     <div class="setrow"><label>🔊 Звуковые эффекты</label><input type="checkbox" id="setSound" ${S.settings.soundOn!==false?'checked':''}></div>
     <div class="setrow"><label>✨ Визуальные эффекты (вспышки, тосты, лучи)</label><input type="checkbox" id="setFx" ${S.settings.fxOn!==false?'checked':''}></div>
     <p style="font-size:11px;color:var(--txt2);line-height:1.5;margin-top:6px">
-      Если день не отмечен ни в одной таблице привычек — при следующем заходе один раз вычитается
-      штраф (очки не уходят в минус, только до 0). Если вы ещё не отмечали более поздние дни —
-      такой пропущенный день можно отметить задним числом: штраф отменится, а сундук будет выдан,
-      как если бы день был выполнен вовремя. Но если вы уже отмечали более поздние дни, пропуск
-      считается сознательным и исправить его нельзя. У каждого конкурента раз в день может
+      Очки лиги никогда не уменьшаются; за пропущенный день теряется только серия дней подряд.
+      Любой прошлый день можно отметить задним числом в любой момент. У каждого конкурента раз в день может
       произойти случайное событие в заданном диапазоне.
     </p>
     <div class="f" style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
@@ -2700,14 +3247,30 @@ function renderSettingsModal(){
         <button class="mbtn ok" id="syncPair" style="white-space:nowrap">🔗 Привязать</button>
       </div>
     </div>
+    <div class="f" style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
+      <label>🗑 Полный сброс</label>
+      <p style="font-size:10px;color:var(--txt2);margin:4px 0 8px;line-height:1.5">
+        Стирает все рамки, таблицы, награды, сундуки, коллекцию и историю — на этом устройстве
+        и в облаке. Приложение вернётся к состоянию первого запуска. ID синхронизации сохранится,
+        поэтому остальные ваши устройства тоже получат чистое состояние. Отменить нельзя —
+        при необходимости сначала сделайте экспорт JSON.
+      </p>
+      <button class="mbtn danger" id="setReset">🗑 Стереть всё и начать с чистого листа</button>
+    </div>
     <div class="brow" style="margin-top:14px">
       <button class="mbtn cancel" id="setCancel">Отмена</button>
       <button class="mbtn ok" id="setOk">Сохранить</button>
     </div>`,ovv=>{
     ovv.querySelector('#setCancel').onclick=()=>ovv.remove();
+    // v7: полный сброс — двойное подтверждение (два разных по тексту диалога подряд)
+    ovv.querySelector('#setReset').onclick=async ev=>{
+      if(!confirm('Стереть ВСЕ данные приложения?\n\nБудут удалены рамки, таблицы привычек, награды, лиги, сундуки, коллекция и статистика — на этом устройстве и в облаке.'))return;
+      if(!confirm('Последнее предупреждение.\n\nЭто действие НЕЛЬЗЯ отменить. Приложение перезапустится с чистым демо-деревом.\n\nСтереть всё?'))return;
+      const b=ev.currentTarget;b.disabled=true;b.textContent='Стираю…';
+      await fullReset();
+    };
     ovv.querySelector('#setOk').onclick=()=>{
       S.settings.mainNodeId=ovv.querySelector('#setMain').value||null;
-      S.settings.penalty=Math.max(0,parseInt(ovv.querySelector('#setPen').value)||0);
       let mn=parseInt(ovv.querySelector('#setEvMin').value);if(!isFinite(mn))mn=-5;
       let mx=parseInt(ovv.querySelector('#setEvMax').value);if(!isFinite(mx))mx=15;
       if(mx<mn){const t=mx;mx=mn;mn=t;}
@@ -2741,9 +3304,8 @@ function renderSettingsModal(){
 }
 function renderLeagueTableModal(){
   const mainId=S.settings.mainNodeId;
-  const raw=mainId&&S.nodes[mainId]?nodeVal(mainId):0;
-  const eff=Math.max(0,raw-S.game.penaltyAccum);
-  const curLvl=levelForScore(eff);
+  const curScore=mainId&&S.nodes[mainId]?nodeVal(mainId):0;
+  const curLvl=levelForScore(curScore);
   const MAXLVL=40; // покрывает существенно дальше 1 000 000 очков
   let rows='';
   for(let l=0;l<=MAXLVL;l++){
@@ -2761,7 +3323,7 @@ function renderRaceModal(){
   const started=!!S.game.startDate;
   const days=started?daysSince(S.game.startDate):0;
   const mainId=S.settings.mainNodeId;
-  const playerScore=mainId&&S.nodes[mainId]?Math.max(0,nodeVal(mainId)-S.game.penaltyAccum):0;
+  const playerScore=mainId&&S.nodes[mainId]?nodeVal(mainId):0;
   const rows=[{name:'🧑 Я',score:playerScore,me:true}]
     .concat(S.game.competitors.map(c=>({name:c.name,score:competitorScore(c),me:false,id:c.id})))
     .sort((a,b)=>b.score-a.score);
@@ -2905,16 +3467,10 @@ async function init(){
     S.conns.push({id:gid('c'),from:i1,to:i3});
     S.settings.mainNodeId=i1; // для новых пользователей сразу отслеживаем «Главную цель»
   }
-  dailyTick(); // v6: догоняющая проверка штрафов/идеальных дней/событий конкурентов за пропущенные дни
+  dailyTick(); // догоняющая проверка: история очков / идеальные дни / события конкурентов за пропущенные дни
   renderAll();
   renderLeagueBar();
   persist(); // v6: сразу сохраняем результат догоняющей проверки, не дожидаясь 30-секундного таймера
-  if(_pendingPenaltyNotice){
-    // v6: показываем эффект штрафа чуть позже, чтобы интерфейс успел отрисоваться —
-    // и суммарно за все пропущенные дни сразу, а не по одному "удару" на каждый день.
-    const notice=_pendingPenaltyNotice;_pendingPenaltyNotice=null;
-    setTimeout(()=>showPenaltyEffect(notice.total,notice.days),900);
-  }
   setInterval(persist,30000);
   initFirebase();
 
@@ -2986,7 +3542,117 @@ init();
      включены; звук требует первого касания экрана (политика браузеров), поэтому
      самый первый штраф при старте может быть без звука — дальше всё звучит штатно
 
-  Все данные (лиги, штрафы, сундуки, коллекция, история) продолжают храниться
+══════════════════════════════════════════════════════
+  ВЕРСИЯ 7 — ВСЕ ЧАСТИ 1–7 ГОТОВЫ:
+══════════════════════════════════════════════════════
+  ✅ Часть 1 — полный сброс (⚙ Настройки → «Стереть всё и начать с чистого листа»):
+     двойное подтверждение; чистятся облако sync/{id}/data, IndexedDB DtreeDB,
+     localStorage dtree_v5/dtree_v4; Sync ID сохраняется (обоснование — в комментарии
+     над fullReset); после очистки — перезагрузка, init() создаёт демо-дерево;
+     флаг _resetting блокирует persist()/syncToFb() во время сброса;
+     маркер dtree_nolegacy отключает перенос старых данных из FB_LEGACY_PATH.
+  ✅ Часть 2 — удалены штрафы и замочки: S.game.penaltyAccum / penalizedDays,
+     S.settings.penalty (migrate() стирает их в старых сохранениях), applyPenalty,
+     revertPenalty, isDaySealed, showTableNotice, sfxPenalty + playThud,
+     showPenaltyEffect, CSS fx-toast-penalty / leagueBarShake / leagueBarFlash /
+     fx-floatnum / row-sealed / row-pending / tblnotice, строка в настройках,
+     _pendingPenaltyNotice в init(). Очки лиги = сырое nodeVal(главной рамки).
+     Любой день в таблице привычек можно отметить без ограничений.
+     ⚠ Для части 4: ретроактивная отметка прошлого дня не трогает S.game.history
+       (раньше перезаписывала точку дня текущим значением рамки) — при переработке
+       истории учесть пересчёт именно этого дня (обработчик галочки в openTable()
+       сейчас вызывает только checkAndFixPerfectDay(dk,true) — туда же добавить
+       пересчёт точки истории дня dk).
+  ✅ Часть 3 — счётчик идеальных дней на главном экране (правый верх, #perfect-badge):
+     крупно — серия подряд (S.game.perfectStreak), мелко — всего (S.game.perfectTotal).
+     Модель и её обоснование — в комментарии над isDayFullyChecked().
+     — checkPerfectDay заменён на checkAndFixPerfectDay(dateKey,userAction): фиксирует статус
+       ОДНОГО дня, +1/−1 к perfectTotal, серия пересчитывается от сегодня (или вчера) назад;
+     — вызывается: recomputeProgress() (живой «сегодня», при каждом persist), processMissedDay()
+       (догоняющая проверка, серию не трогает без смены статуса), обработчик галочки таблицы
+       (любой день, userAction=true → серия пересчитывается всегда);
+     — серия НЕ обнуляется при открытии после пропуска (хранится в S.game.perfectStreak);
+     — день идеален, если есть хотя бы одна таблица, в них есть хотя бы одна привычка и все
+       привычки отмечены (таблицы без столбцов пропускаются);
+     — удалены: grantChest('perfect:') везде, perfectStreak()/perfectTotal() (теперь читаются
+       сохранённые поля), блок идеальных дней в модалке статистики, perfectDayDate;
+       ветки 'perfect:' в chestReasonText/chestReasonLabel (старые сундуки с такой причиной
+       покажутся как «📦 Сундук»);
+     — renderPerfectBadge() вызывается из updateStatus() и renderLeagueBar();
+     — sw.js: CACHE поднят до dtree-v7.3.
+     ℹ Для следующих частей: perfectDays растёт на ~13 байт в день (при желании сжать в
+       части 4/7); сундуки за идеальные дни убраны полностью (проверено в части 5).
+  ✅ Часть 4а — история и статистика (без полноэкранного режима):
+     — S.game.history = {d,w,m,y,fz}: дни (400 сут.) → недели (до ~5 лет) → месяцы (до ~20 лет) → годы;
+       значение = очки на конец периода; compactHistory() вызывается из dailyTick(); объяснение — в
+       комментарии над HIST_DAY_KEEP; migrate() переносит старый плоский формат в слой дней;
+     — fz = скаляры свёрнутой части (max/sum/cnt/last/ld); historyStats() = fz + точные дни →
+       максимум и среднее (sum/cnt) за всё время; getHistoryPoints() склеивает слои в один ряд;
+     — ретроактивная отметка: обработчик галочки в openTable() считает изменение очков главной рамки
+       и вызывает shiftHistoryFrom(dk,diff) — точки дня dk и всех следующих сдвигаются на diff;
+     — модалка статистики: график скользящего среднего удалён; остались «Рост очков лиги» и
+       «Прогресс за день (Δ)» с двумя пунктирными линиями (макс — оранжевая, среднее — бирюзовая)
+       + подписи числами; в Δ агрегированная точка = средний прирост за день периода;
+     — refreshStatsIfOpen() вызывается из persist() → открытая модалка обновляется «на лету»;
+     — sw.js: CACHE поднят до dtree-v7.4.
+  ✅ Часть 4б — полноэкранный режим обоих графиков (кнопка ⛶ в заголовке графика в окне статистики):
+     — масштабы 1 нед / 2 нед / 1 мес / 3 мес / 6 мес / 1 год / 5 / 10 / 20 лет / всё время (FS_SCALES);
+       весь диапазон вписан в ширину без скролла (svgFitChart), шаг точки зависит от длины окна
+       (день → неделя → месяц → квартал → год), значение точки = очки на конец периода (fsSeries);
+     — где данных нет — серая зона «нет данных»; Δ-график с теми же пунктирными макс/среднее + подписи;
+     — обновляется «на лету» из persist() (refreshStatsIfOpen → renderFsChart), при повороте экрана
+       перерисовывается (resize); выбранный масштаб запоминается (_fsScale);
+     — sw.js: CACHE поднят до dtree-v7.5. ЗАДАЧА 4 ПОЛНОСТЬЮ ЗАКРЫТА.
+  ✅ Часть 5 — сундуки: новая механика и UI:
+     — удалены пити-таймер (opensSinceLegendary, строка в модалке) и grantedRoundScore (шаг 100);
+       grantChest('perfect:') нигде не осталось;
+     — два отдельных триггера очков в recomputeProgress(): шаг CHEST_STEP=30 (S.game.grantedStepScore,
+       причина 'step:N') и юбилейные числа (S.game.grantedJubilee, причина 'jubilee:N', ряд — nextJubilee():
+       10, 25, 50, 75, далее по декадам ×1/1.5/2/2.5/3.5/5/7.5); пороги — high-water mark, повторно не выдаются;
+     — league: и streak: без изменений (STREAK_MILESTONES вынесен в константу);
+     — веса редкостей 64/26/8/2 % (RARITY_WEIGHTS), обоснование и расчёт срока сбора — в комментарии над
+       таблицей лиг; проценты в модалке считаются из RARITY_WEIGHTS;
+     — renderChestsModal(): список неоткрытых, «Как получить сундук» (лига / шаг 30 «k/30» / юбилеи
+       «Следующая цель: N очков (сейчас X)» / стрики + строка «m/цель» на каждую таблицу),
+       «Шансы редкостей»; старые сундуки 'round:' ещё читаются в chestReasonText;
+     — sw.js: CACHE поднят до dtree-v7.6.
+  ✅ Часть 6 — звуки:
+     — причина «нет звука в обычных рамках»: у change-обработчика галочки листовой рамки не было вызова
+       sfxCheck() (он был только в openTable); добавлен;
+     — звуковой движок переписан (блок «ЗВУК»): гармоники + хорус (detune) + экспоненциальные огибающие +
+       компрессор + сгенерированная реверберация; ноты больше не теряются, если контекст «уснул»
+       (withCtx будит его, но только после первого жеста — _audioUnlocked);
+     — sfxCheck (стеклянный тик, пентатоника), sfxChest (арпеджио), НОВЫЙ sfxChestOpen(rarity) —
+       шорох + аккорд + искры по редкости (вызывается в openChestById), sfxLeague (фанфара);
+     — все sfx*() проверяют soundEnabled() (настройка «🔊 Звуковые эффекты» гасит всё; применяется по «Сохранить»);
+     — sw.js: CACHE поднят до dtree-v7.7.
+     — ПРОВЕРКА В БРАУЗЕРЕ (headless Chromium, AudioContext подменён офлайн-рендерером — сигнал измерялся):
+       нашёлся дефект: DynamicsCompressorNode (порог −18 дБ) съедал короткие транзиенты — тик на галочке
+       имел пик ≈ 0.03 (−30 дБFS, почти неслышно) даже при ratio=1. Компрессор заменён на детерминированный мягкий
+       лимитер (WaveShaper tanh, пик ≤ 0.76, клиппинг невозможен); громкости перебалансированы: галочка ≈ 0.14 <
+       сундук ≈ 0.2 < открытие сундука / лига ≈ 0.4; «шорох» сундука усилен (был ≈ −20 дБ от аккорда);
+       sfxChestOpen различает редкости по числу искр, длине аккорда, «залу» и shimmer-октаве (20 → 74 осциллятора,
+       1.9 → 2.7 с); sfxChest с троттлингом 600 мс (массовый набор очков давал 9 наложенных арпеджио);
+       unlockAudio вешается на pointerdown/touchend/click/keydown — до жеста звук не играет и не падает.
+     ⚠ Настроить «на слух» не удалось (нет устройства вывода): тембры/громкости подобраны по измерениям сигнала.
+     — sw.js: CACHE поднят до dtree-v7.8 (после правок звука и части 7).
+  ✅ Часть 7 — сжатие старых данных таблиц привычек (дни старше TBL_KEEP_DAYS = 730):
+     — обоснование и формат — в комментарии над TBL_KEEP_DAYS (блок «СЖАТИЕ СТАРЫХ ДАННЫХ ТАБЛИЦ ПРИВЫЧЕК»);
+     — t.arch = {to, tail, best, total, days, y:{год:{d,c,t:{привычка:n}}}}: очки (nodeVal) и серия (streak) НЕ меняются,
+       серия длиннее 730 дней не обрезается; рост — одна запись года на таблицу (≈ 0.3 КБ при 10 привычках);
+     — compactTableEntries() / archivePerfectDays() / compactTablesData() вызываются из persist() (старт, импорт, облако);
+       S.game.perfectDays сжимается так же, серию на границе помнит S.game.perfectArch = {to, tail};
+     — openTable() больше не создаёт пустые {} на 730 дней (это было главным источником раздувания); пустые дни и
+       false-флаги нигде не хранятся; в окне таблицы появилась сворачиваемая сводка архива (итоги и по годам / привычкам);
+     — инвариант против двойного счёта: записи entries за дни ≤ arch.to игнорируются в nodeVal/streak и выбрасываются;
+     — проверено: дифференциальная симуляция (подмена часов, 4 сценария, 900–3000 дней, ≈ 7600 ежедневных сверок с
+       несжатым эталоном: очки, серия привычек, серия идеальных дней, лучшая серия, итоги по годам и привычкам) и
+       сквозной тест «старое сохранение в IndexedDB → перезагрузка → сжатие → открытие таблицы» (JSON 290 → 143 КБ).
+     — sw.js: CACHE поднят до dtree-v7.8.
+  ⬜ Идеи на будущее (не обязательны): хранить день как битовую маску по привычкам (id привычки ≈ 20 байт на отметку
+     в живом окне — основной вес оставшегося хранилища); помесячная детализация архива, если появится экран статистики.
+
+  Все данные (лиги, сундуки, коллекция, история) продолжают храниться
   под тем же ключом dtree_v5 и синхронизироваться через тот же Firebase-путь —
   апгрейд с v5 полностью бесшовный, ничего вручную переносить не нужно.
 ══════════════════════════════════════════════════════
