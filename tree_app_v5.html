@@ -415,7 +415,8 @@ let S = {
   tables:{},  // id→{id,name,tasks:[{id,name}],entries:{dateKey:{taskId:true}},arch?:{…}} — arch: архив дней старше 730 (часть 7, см. compactTableEntries)
   achiev:[],  // [{id,text,icon,cond:{type,nodeId,tableId,threshold}}]
   cam:{x:0,y:0,scale:1},
-  lastModified:0,  // timestamp for Firebase conflict resolution
+  lastModified:0,  // v8: только информационное (время последней правки пользователем); В СРАВНЕНИЯХ НЕ УЧАСТВУЕТ
+  rev:null,        // v8: токен ревизии облака, на которой основано это состояние (случайная строка, не время → часы устройств не важны)
   // ── v5 gamification ──
   settings:{
     mainNodeId:null,   // id рамки, чьи очки отслеживаются в лиге
@@ -464,29 +465,45 @@ async function openIDB(){
   });
 }
 
-async function persist(){
+// v8: «подпись» содержимого — без служебных полей lastModified и rev. По ней отличаем РЕАЛЬНОЕ
+// изменение данных от пустого вызова persist() (старт, 30-секундный таймер, повторное «Сохранить»).
+// Раньше persist() каждый раз ставил lastModified=Date.now() — и устройство с устаревшими данными
+// «обновлялось» само при старте и по таймеру, а потом перезаписывало облако. Это и была главная причина потерь.
+const sigOf=o=>{const {lastModified,rev,...rest}=o;return JSON.stringify(rest);};
+let _lastSig=null,_lastRev=null;
+
+// userEdit=true (по умолчанию) — вызов вызван действием пользователя: если данные реально изменились,
+// состояние помечается «есть неотправленные правки» (fbDirty). userEdit=false — старт, таймер,
+// применение чужих данных, служебные пересчёты: сохраняем локально, но в облако сами по себе не пишем.
+async function persist(userEdit=true){
   if(_resetting)return; // v7: идёт полный сброс — ничего не сохраняем
   compactTablesData(); // v7 (часть 7): старые дни таблиц и идеальные дни → в компактный архив (очки и серии не меняются)
   recomputeProgress(); // v5: проверка лиги/сундуков/стриков перед сохранением
   refreshStatsIfOpen(); // v7 (часть 4): если модалка статистики открыта — график сразу показывает новую сегодняшнюю точку
-  S.lastModified=Date.now();
-  const json=JSON.stringify(S);
-  // IDB
-  if(idb){
-    try{
-      await new Promise((res,rej)=>{
-        const tx=idb.transaction('d','readwrite');
-        tx.objectStore('d').put(json,SKEY);
-        tx.oncomplete=res;tx.onerror=rej;
-      });
-    }catch(e){}
+  const sig=sigOf(S);
+  const contentChanged=sig!==_lastSig;
+  if(contentChanged){
+    _lastSig=sig;
+    if(userEdit){S.lastModified=Date.now();fbDirty=true;fbSaveDirty();}
   }
-  // localStorage backup
-  try{localStorage.setItem(SKEY,json);}catch(e){}
+  if(contentChanged||S.rev!==_lastRev){
+    _lastRev=S.rev;
+    const json=JSON.stringify(S);
+    if(idb){
+      try{
+        await new Promise((res,rej)=>{
+          const tx=idb.transaction('d','readwrite');
+          tx.objectStore('d').put(json,SKEY);
+          tx.oncomplete=res;tx.onerror=rej;
+        });
+      }catch(e){}
+    }
+    try{localStorage.setItem(SKEY,json);}catch(e){}
+  }
   const t=new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
   document.getElementById('sstatus').textContent='✓ Сохранено '+t;
-  // Firebase sync (debounced, skipped when receiving remote update)
-  if(!fbReceiving)syncToFb();
+  // Облако: только если есть неотправленные правки пользователя (syncToFb сама ждёт первый снимок облака)
+  if(fbDirty&&!fbReceiving)syncToFb();
 }
 
 async function restore(){
@@ -524,6 +541,7 @@ function migrate(s){
   if(!s.cam)s.cam={x:0,y:0,scale:1};
   if(!s.achiev)s.achiev=[];
   if(!s.lastModified)s.lastModified=0;
+  if(s.rev===undefined)s.rev=null; // v8
   // ── v5: backfill gamification fields for old (v4 and earlier) saves ──
   if(!s.settings)s.settings={};
   if(s.settings.mainNodeId===undefined)s.settings.mainNodeId=null;
@@ -750,6 +768,18 @@ function s2c(sx,sy){// screen → canvas coords
 //  ни читать, ни писать (см. правила безопасности в инструкции).
 // ══════════════════════════════════════════════════
 let fbDb=null,fbListening=false,fbReceiving=false,fbTimer=null;
+// ── v8: протокол синхронизации ──
+// • S.rev — токен ревизии облака, на которой основано локальное состояние (случайная строка; время не используется).
+// • fbDirty — есть локальные правки пользователя, ещё не доехавшие до облака (хранится в localStorage, переживает перезапуск).
+// • fbBase — JSON последнего известного состояния облака; база для трёхстороннего слияния при конфликте.
+// • fbSynced — получен первый снимок облака для текущей ветки. До этого момента писать в облако ЗАПРЕЩЕНО.
+// • Запись в облако — только через runTransaction с проверкой «rev облака == мой базовый rev».
+//   Если облако ушло вперёд, запись отклоняется, устройство забирает облако, СЛИВАЕТ с локальными правками и повторяет.
+let fbDirty=false,fbBase=null,fbSynced=false,fbOnline=false,fbPushing=false,fbQueued=false;
+const newToken=()=>Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10);
+function fbLoadMeta(){try{fbDirty=localStorage.getItem('dtree_dirty')==='1';fbBase=localStorage.getItem('dtree_syncbase');}catch(e){}}
+function fbSaveDirty(){try{localStorage.setItem('dtree_dirty',fbDirty?'1':'0');}catch(e){}}
+function fbSetBase(raw){fbBase=raw;try{localStorage.setItem('dtree_syncbase',raw);}catch(e){}}
 let fbUid=null,fbSyncId=null,fbUserPath=null;
 let fbPermDenied=false; // true — Firebase права не разрешены, бесполезно повторять
 let fbLastError=null;   // последняя ошибка Firebase для диагностики
@@ -778,6 +808,11 @@ function reconnectSync(newId){
   fbSyncId=newId;
   fbUserPath='sync/'+newId+'/data';
   fbPermDenied=false; // сбрасываем флаг — даём новый шанс при смене ID
+  // v8: новая ветка — начинаем «с нуля»: ждём её первый снимок. Если в облаке по этому ID есть данные, они
+  // заменят локальные (как «привязка к существующим данным»); если пусто — зальём локальные.
+  fbSynced=false;fbDirty=false;fbSaveDirty();fbBase=null;
+  try{localStorage.removeItem('dtree_syncbase');}catch(e){}
+  clearTimeout(fbTimer);S.rev=null;
   fbLastError=null;
   if(fbDb){
     if(oldPath)try{fbDb.ref(oldPath).off();}catch(e){}
@@ -816,39 +851,130 @@ function bindFbDiag(){
   });
 }
 
+// Трёхстороннее слияние JSON: b — база (последнее известное облако), l — локальное, r — удалённое.
+// Что менялось только с одной стороны — берём эту сторону; удаление побеждает, если вторая сторона
+// объект не трогала; одно и то же поле, изменённое с обеих сторон, — побеждает локальное (последнее
+// действие пользователя на ЭТОМ устройстве). Массивы с полем id (conns, achiev, tasks…) сливаются как словари;
+// прочие массивы (чекбоксы, логи) — целиком (локальный вариант, если он менялся). Ничего не теряется «молча»
+// на уровне рамок/связей/таблиц/дней: новые рамки и отметки с обеих сторон сохраняются.
+const _j=x=>JSON.stringify(x);
+const _isO=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
+const _isIdArr=a=>Array.isArray(a)&&a.length>0&&a.every(e=>_isO(e)&&typeof e.id==='string');
+function m3(b,l,r){
+  if(_j(l)===_j(r))return l;
+  if(_j(b)===_j(l))return r;
+  if(_j(b)===_j(r))return l;
+  if(_isO(l)&&_isO(r)){
+    const bo=_isO(b)?b:{},o={};
+    for(const k of new Set([...Object.keys(l),...Object.keys(r)])){
+      const inL=k in l,inR=k in r;
+      if(inL&&inR)o[k]=m3(bo[k],l[k],r[k]);
+      else if(inL){if(!(k in bo)||_j(bo[k])!==_j(l[k]))o[k]=l[k];}  // справа удалено: оставляем, только если мы это меняли/добавили
+      else{if(!(k in bo)||_j(bo[k])!==_j(r[k]))o[k]=r[k];}          // слева удалено: оставляем, только если справа это менялось/добавлено
+    }
+    return o;
+  }
+  if(_isIdArr(l)&&_isIdArr(r)){
+    const toM=a=>Object.fromEntries(a.map(e=>[e.id,e]));
+    const mm=m3(_isIdArr(b)?toM(b):{},toM(l),toM(r));
+    return [...new Set([...l.map(e=>e.id),...r.map(e=>e.id)])].filter(id=>id in mm).map(id=>mm[id]);
+  }
+  return l; // атомарные значения / массивы без id
+}
+
+// Применить снимок облака (raw — JSON-строка). Возвращает true, если локальное состояние изменилось.
+// Нет локальных правок → просто принимаем облако (какой бы rev ни был — сравнение по равенству токенов, а не по времени).
+// Есть неотправленные правки → сливаем с облаком (m3), результат остаётся «грязным» и будет отправлен.
+function fbApplyRemote(raw){
+  if(_resetting||!raw)return false;
+  let remote;
+  try{remote=migrate(JSON.parse(raw));}catch(e){console.error('FB parse:',e);return false;}
+  if((remote.rev||null)===(S.rev||null))return false; // это уже наше состояние (в т.ч. эхо собственной записи)
+  if(!fbDirty){
+    S=remote;
+  }else{
+    let base=null;try{base=fbBase?JSON.parse(fbBase):null;}catch(e){}
+    if(base&&(base.rev||null)!==(S.rev||null))base=null; // база от другого снимка — для слияния не годится
+    const lm=S.lastModified;
+    const merged=m3(base||{},S,remote);
+    merged.rev=remote.rev;merged.lastModified=lm;
+    S=migrate(merged);
+    fbDirty=sigOf(S)!==sigOf(remote); // слияние совпало с облаком — отправлять нечего
+  }
+  fbSetBase(raw);fbSaveDirty();
+  fbReceiving=true;
+  renderAll();renderLeagueBar();
+  persist(false).then(()=>{fbReceiving=false;});
+  return true;
+}
+
 function syncToFb(immediate=false){
   if(_resetting)return; // v7: идёт полный сброс — не заливаем старые данные обратно в облако
-  if(!fbDb||!fbUserPath)return;
-  if(fbPermDenied)return; // правила Firebase заблокировали доступ — не тратить время
-  const doSync=async()=>{
-    try{
-      setFbSt('⬆ Синхр…','sync');
-      await fbDb.ref(fbUserPath).set(JSON.stringify(S));
-      setFbSt('☁ '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}),'ok');
-    }catch(e){
-      fbLastError=(e.code||e.message||String(e));
-      const isPermission=(fbLastError.toLowerCase().includes('permission')||fbLastError.toLowerCase().includes('denied'));
-      if(isPermission){
-        fbPermDenied=true;
-        setFbSt('🔴 Нет прав (tap ℹ)','err');
-      } else {
-        setFbSt('🔴 Ошибка','err');
-      }
-      console.error('FB write:',e);
-    }
-  };
-  if(immediate){doSync();return;}
+  if(!fbDb||!fbUserPath||fbPermDenied)return;
+  if(!fbDirty)return; // v8: нет неотправленных правок пользователя — в облако не пишем (ни при старте, ни по таймеру)
+  if(!fbSynced){setFbSt('⏳ Ждём облако…','sync');return;} // v8: пока не пришёл первый снимок облака — не пишем
+  if(!fbOnline)return; // офлайн: отправим при появлении связи (см. .info/connected)
+  if(immediate){fbPush();return;}
   clearTimeout(fbTimer);
-  fbTimer=setTimeout(doSync,700);
+  fbTimer=setTimeout(fbPush,700);
+}
+
+// Отправка через транзакцию: запись проходит, только если ревизия в облаке всё ещё та, на которой основано
+// наше состояние. Иначе — забираем облако, сливаем, повторяем (до 4 попыток).
+async function fbPush(){
+  if(_resetting||!fbDirty||!fbSynced||!fbDb||!fbUserPath||fbPermDenied||!fbOnline)return;
+  if(fbPushing){fbQueued=true;return;}
+  fbPushing=true;
+  try{
+    for(let attempt=0;attempt<4&&fbDirty;attempt++){
+      const snap=JSON.parse(JSON.stringify(S)); // снимок на момент отправки (S может измениться во время await)
+      const baseRev=snap.rev||null;
+      const newRev=newToken();
+      const out=JSON.stringify(Object.assign({},snap,{rev:newRev}));
+      setFbSt('⬆ Синхр…','sync');
+      // applyLocally=false: промежуточное значение не показывается слушателям, пока сервер не подтвердил запись
+      const res=await fbDb.ref(fbUserPath).transaction(cur=>{
+        if(cur!=null){
+          let r=null;try{r=JSON.parse(cur);}catch(e){}
+          if(r&&(r.rev||null)!==baseRev)return; // облако ушло вперёд — отмена
+        }
+        return out;
+      },undefined,false);
+      if(res.committed){
+        const unchanged=sigOf(S)===sigOf(snap); // пользователь мог внести ещё правки, пока шла отправка
+        S.rev=newRev;fbSetBase(out);
+        if(unchanged)fbDirty=false;
+        fbSaveDirty();
+        setFbSt('☁ '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}),'ok');
+        await persist(false); // сохраняем новый rev локально
+        break;
+      }
+      // Отмена: облако изменилось с другого устройства. Берём его и сливаем с нашими правками.
+      const fresh=await fbDb.ref(fbUserPath).once('value');
+      fbApplyRemote(fresh.val());
+    }
+  }catch(e){
+    fbLastError=(e.code||e.message||String(e));
+    const isPermission=(fbLastError.toLowerCase().includes('permission')||fbLastError.toLowerCase().includes('denied'));
+    if(isPermission){fbPermDenied=true;setFbSt('🔴 Нет прав (tap ℹ)','err');}
+    else setFbSt('🔴 Ошибка','err');
+    console.error('FB write:',e);
+  }finally{
+    fbPushing=false;
+    if(fbQueued){fbQueued=false;syncToFb();}
+  }
 }
 
 function startFbListener(){
   if(!fbDb||!fbUserPath||fbListening)return;
   fbListening=true;
+  fbSynced=false; // v8: для этой ветки первый снимок ещё не получен
   // Connection state
   fbDb.ref('.info/connected').on('value',snap=>{
-    if(snap.val()){
+    fbOnline=!!snap.val();
+    if(fbOnline){
       if(!fbPermDenied)setFbSt('☁ Подключено','ok');
+      if(fbDirty&&fbSynced)syncToFb(); // связь вернулась — отправляем накопленные офлайн правки
     } else {
       setFbSt('🔴 Нет связи','err');
     }
@@ -856,27 +982,18 @@ function startFbListener(){
   // Data listener (общая ветка по Sync ID)
   fbDb.ref(fbUserPath).on('value',snap=>{
     const raw=snap.val();
+    fbSynced=true; // первый снимок получен — с этого момента запись разрешена (сама запись идёт через транзакцию)
     if(!raw){
-      // Firebase пуст — загружаем туда локальные данные
-      if(Object.keys(S.nodes).length)syncToFb(true);
+      // Облако пусто. Заливаем локальное, только если это устройство ещё ни разу не синхронизировалось
+      // (чистое устройство, первая заливка) или есть неотправленные правки. Иначе облако только что сбросили
+      // с другого устройства (fullReset) — не «воскрешаем» своё старое состояние, ждём новое.
+      if(!fbDirty&&!fbBase&&Object.keys(S.nodes).length){fbDirty=true;fbSaveDirty();}
+      if(fbDirty)syncToFb(true);
       return;
     }
-    try{
-      const remote=migrate(JSON.parse(raw));
-      const remoteTs=remote.lastModified||0;
-      const localTs=S.lastModified||0;
-      if(remoteTs>localTs+200){
-        // Удалённые данные новее — применяем
-        fbReceiving=true;
-        S=remote;
-        persist().then(()=>{fbReceiving=false;});
-        renderAll();
-        renderLeagueBar();
-        setFbSt('⬇ Обновлено','ok');
-      } else {
-        setFbSt('☁ Актуально','ok');
-      }
-    }catch(e){console.error('FB parse:',e);}
+    const applied=fbApplyRemote(raw);
+    setFbSt(applied?(fbDirty?'⇄ Слито':'⬇ Обновлено'):'☁ Актуально','ok');
+    if(fbDirty)syncToFb(true);
   }, err=>{
     // Ошибка чтения — чаще всего permission_denied (неверные правила или нет авторизации)
     fbListening=false; // сбрасываем флаг чтобы можно было переподключиться
@@ -917,9 +1034,9 @@ async function migrateLegacyFbData(){
 //    ветки, а не данные.
 //  • Если стереть ID, устройство потеряет связь с другими своими устройствами: они продолжат
 //    хранить старые данные и слать их в старую ветку. С сохранённым ID остальные устройства
-//    получают чистое состояние (оно новее по lastModified) и тоже обнуляются.
-//  • Оговорка: устройство, которое было офлайн и изменит данные уже ПОСЛЕ сброса, выиграет по
-//    lastModified (last-write-wins) — это свойство синхронизации, а не сброса.
+//    получают чистое состояние (v8: у них нет правок → они принимают чужую ревизию) и тоже обнуляются.
+//  • Оговорка: устройство с неотправленными правками (fbDirty) после сброса СЛИЯНИЕМ вернёт свои данные в облако —
+//    это свойство синхронизации (правки не теряются), а не сброса.
 // ПОРЯДОК: облако (пока жив fbDb) → IndexedDB → localStorage → перезагрузка страницы.
 // Перезагрузка нужна намеренно: она гарантированно выбрасывает in-memory состояние S и все
 // таймеры, а init() отрабатывает ровно как на чистом устройстве (создаёт демо-дерево).
@@ -966,6 +1083,8 @@ async function fullReset(){
     localStorage.removeItem(SKEY);
     localStorage.removeItem(SKEY_LEGACY);
     localStorage.setItem('dtree_nolegacy','1');
+    localStorage.removeItem('dtree_dirty');     // v8: метаданные синхронизации тоже стираем
+    localStorage.removeItem('dtree_syncbase');
   }catch(e){}
 
   if(!cloudOk)alert('Не удалось связаться с облаком: локальные данные стёрты, а облачная копия будет заменена чистым состоянием при следующей синхронизации.');
@@ -3399,7 +3518,8 @@ document.getElementById('fileInp').addEventListener('change',e=>{
     try{
       const parsed=JSON.parse(ev.target.result);
       if(parsed.nodes){
-        S=migrate(parsed);persist();renderAll();
+        const keepRev=S.rev; // v8: rev — служебный токен ревизии облака, из бэкапа его не берём
+        S=migrate(parsed);S.rev=keepRev;persist();renderAll();
         alert('✅ Данные загружены!');
       }else alert('❌ Неверный формат файла.');
     }catch(err){alert('❌ Ошибка чтения файла.');}
@@ -3458,6 +3578,8 @@ async function init(){
   try{idb=await openIDB();}catch(e){console.warn('IDB unavailable');}
   const saved=await restore();
   if(saved){S=migrate(saved);}
+  fbLoadMeta();      // v8: «есть неотправленные правки» и база слияния из прошлого сеанса
+  _lastSig=sigOf(S); // v8: стартовое содержимое — не считается правкой пользователя
   if(!Object.keys(S.nodes).length){
     const i1=gid('n'),i2=gid('n'),i3=gid('n');
     S.nodes[i1]={id:i1,x:300,y:180,text:'Главная цель',type:'node',tableId:null,checkboxes:[]};
@@ -3470,8 +3592,8 @@ async function init(){
   dailyTick(); // догоняющая проверка: история очков / идеальные дни / события конкурентов за пропущенные дни
   renderAll();
   renderLeagueBar();
-  persist(); // v6: сразу сохраняем результат догоняющей проверки, не дожидаясь 30-секундного таймера
-  setInterval(persist,30000);
+  persist(false); // v6/v8: сохраняем результат догоняющей проверки ЛОКАЛЬНО; в облако при старте не пишем (ждём первый снимок облака)
+  setInterval(()=>persist(false),30000); // v8: таймер — только локальное сохранение, облако не трогает
   initFirebase();
 
   // Register Service Worker (PWA)
