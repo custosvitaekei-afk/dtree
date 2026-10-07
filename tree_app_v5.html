@@ -116,6 +116,20 @@ tr:last-child td{border-bottom:none}
 tr.today td{background:rgba(108,99,255,.1)}tr.today td.dtd{color:var(--acc);font-weight:700}
 td input[type=checkbox]{width:16px;height:16px;accent-color:var(--acc);cursor:pointer}
 td input[type=checkbox]:disabled{cursor:not-allowed;opacity:.4}
+/* v9 (часть 1): почасовая разметка внутри дня */
+.hx{background:none;border:none;cursor:pointer;font-size:12px;padding:0 5px 0 0;opacity:.55;vertical-align:middle}
+.hx:hover{opacity:1}
+.hhint{font-size:11px;color:var(--txt2);line-height:1.5;margin:0 0 8px}
+tr.hrow td{padding:8px;background:var(--surf2);text-align:left;white-space:normal}
+.hpanel{position:sticky;left:0;box-sizing:border-box}
+.hgrp+.hgrp{margin-top:9px}
+.hgh{display:flex;justify-content:space-between;font-size:11px;color:var(--txt2);margin-bottom:4px}
+.hgh b{color:var(--txt);font-family:'JetBrains Mono',monospace}
+.hgrid{display:grid;grid-template-columns:repeat(12,1fr);gap:3px}
+.hb{height:26px;padding:0;font-size:10px;font-family:'JetBrains Mono',monospace;background:var(--surf);border:1px solid var(--border);color:var(--txt2);border-radius:5px;cursor:pointer}
+.hb:hover{border-color:var(--acc)}
+.hb.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.hb.now{outline:1px solid var(--yel);outline-offset:1px}
 .sbar{display:flex;align-items:center;gap:14px;background:var(--surf2);border:1px solid var(--border);border-radius:9px;padding:10px 14px;margin-bottom:14px}
 .sv{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--yel)}
 .sl{font-size:11px;color:var(--txt2)}
@@ -298,8 +312,20 @@ td input[type=checkbox]:disabled{cursor:not-allowed;opacity:.4}
 /* ─── СЧЁТЧИК ИДЕАЛЬНЫХ ДНЕЙ (v7, часть 3) — правый верхний угол главного экрана ───
    Поверх холста, под панелью инструментов. pointer-events:none — чтобы не мешать
    перетаскиванию рамок и жестам камеры в этом углу. */
-#perfect-badge{position:fixed;top:58px;right:12px;z-index:900;text-align:right;pointer-events:none;font-family:'JetBrains Mono',monospace;line-height:1.1;user-select:none}
-#pf-streak{font-size:34px;font-weight:700;color:var(--yel);text-shadow:0 0 14px rgba(255,200,60,.55),0 2px 4px rgba(0,0,0,.6);white-space:nowrap}
+#perfect-badge{position:fixed;top:58px;right:12px;max-width:92vw;z-index:900;text-align:right;pointer-events:none;font-family:'JetBrains Mono',monospace;line-height:1.1;user-select:none}
+#pf-streak{font-size:26px;font-weight:700;color:var(--yel);text-shadow:0 0 14px rgba(255,200,60,.55),0 2px 4px rgba(0,0,0,.6)}
+/* v9 (часть 3): число в скобках (полные дни) — мельче и тише основного значения; значение переносится по единицам */
+.pfd{font-size:.55em;font-weight:400;opacity:.8;white-space:nowrap}
+#pf-sub .pfd{font-size:.9em}
+/* ─── РЕЖИМ «ТОЛЬКО ПРОСМОТР» (v9, часть 4): плашка + рамка по краю экрана + скрыты кнопки, которые ничего не могут изменить ─── */
+#ro-banner{display:none;position:fixed;bottom:34px;left:50%;transform:translateX(-50%);z-index:6500;align-items:center;gap:10px;background:rgba(20,22,40,.96);border:1px solid var(--yel);color:var(--yel);padding:6px 8px 6px 14px;border-radius:20px;font-size:12px;font-weight:700;box-shadow:0 4px 18px rgba(0,0,0,.55);white-space:nowrap;max-width:94vw}
+#ro-banner button{background:var(--yel);color:#000;border:0;border-radius:14px;padding:5px 12px;font-weight:700;font-size:11px;cursor:pointer;font-family:inherit}
+body.ro #ro-banner{display:flex}
+#ro-banner.flash{animation:roFlash .6s}
+@keyframes roFlash{0%,100%{transform:translateX(-50%) scale(1)}35%{transform:translateX(-50%) scale(1.1);box-shadow:0 0 0 4px rgba(255,200,60,.5)}}
+body.ro::before{content:'';position:fixed;inset:0;border:3px solid rgba(255,200,60,.5);pointer-events:none;z-index:6400}
+body.ro #bAdd,body.ro #bConn,body.ro #bAuto,body.ro #bTbl,body.ro #bAch,body.ro #bDel,body.ro #bSave,body.ro #bImp,body.ro #bSet{display:none}
+body.ro .nacts,body.ro .nibtn,body.ro .node .minicbtn:not(.opentbl){display:none!important}
 #pf-streak.zero{color:var(--txt2);text-shadow:none;opacity:.7}
 /* ─── ПОЛНОЭКРАННЫЕ ГРАФИКИ (v7, часть 4б) ─── */
 .chartsec-h{display:flex;align-items:center;justify-content:space-between}
@@ -316,7 +342,7 @@ td input[type=checkbox]:disabled{cursor:not-allowed;opacity:.4}
 .fs-chart{flex:1;min-height:0;overflow:hidden}
 .fs-chart svg{display:block}
 .fs-foot{font-size:12px;color:var(--txt2);line-height:1.6;text-align:center}
-#pf-sub{font-size:10px;color:var(--txt2);opacity:.6;margin-top:3px;white-space:nowrap;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+#pf-sub{font-size:11px;color:var(--txt2);opacity:.8;margin-top:3px;text-shadow:0 1px 3px rgba(0,0,0,.7)}
 </style>
 </head>
 <body>
@@ -339,6 +365,7 @@ td input[type=checkbox]:disabled{cursor:not-allowed;opacity:.4}
   <button class="tb" id="bExp" title="Экспорт данных в файл">📤</button>
   <button class="tb" id="bImp" title="Импорт данных из файла">📥</button>
   <button class="tb" id="bHelp">❓</button>
+  <button class="tb" id="bRO" title="Режим «только просмотр»: ничего нельзя изменить (настройка только этого устройства)">👁 Просмотр</button>
   <span id="fb-status" title="Статус Firebase синхронизации">⚫ Офлайн</span>
   <div id="mode-badge">НАВ</div>
 </div>
@@ -356,11 +383,14 @@ td input[type=checkbox]:disabled{cursor:not-allowed;opacity:.4}
   </div>
 </div>
 
-<!-- v7 (часть 3): счётчик идеальных дней — крупно «подряд», мелко «всего» -->
+<!-- v7 (часть 3): счётчик идеальных дней; v9: идеальные часы, формат «6 дн. 20 ч (6 дн.)», без подписей — крупно «подряд», мелко «всего» -->
 <div id="perfect-badge">
-  <div id="pf-streak" class="zero">🔥 0</div>
-  <div id="pf-sub">идеальных дней подряд · всего 0</div>
+  <div id="pf-streak" class="zero">🔥 0 ч <span class="pfd">(0 дн.)</span></div>
+  <div id="pf-sub">0 ч <span class="pfd">(0 дн.)</span></div>
 </div>
+
+<!-- v9 (часть 4): плашка режима «только просмотр» — видна всегда, пока режим включён; кнопка «Выключить» работает без условий -->
+<div id="ro-banner"><span>👁 Режим просмотра — изменения отключены</span><button type="button" id="roOff">Выключить</button></div>
 
 <div id="leaguebar">
   <span id="lg-icon">🌱</span>
@@ -412,7 +442,7 @@ const FB_LEGACY_PATH = "dtree_main"; // путь, где раньше (v4) ле�
 let S = {
   nodes:{},   // id→{id,x,y,text,type,tableId,checkboxes:[{checked,label}]}
   conns:[],   // [{id,from,to}]
-  tables:{},  // id→{id,name,tasks:[{id,name}],entries:{dateKey:{taskId:true}},arch?:{…}} — arch: архив дней старше 730 (часть 7, см. compactTableEntries)
+  tables:{},  // id→{id,name,tasks:[{id,name}],entries:{dateKey:{taskId:true}},hrs?:{dateKey:{taskId:маска часов}},arch?:{…}} — hrs: частично отмеченные дни по часам (v9, часть 1 почасовой разметки); arch: архив дней старше 730 (часть 7, см. compactTableEntries)
   achiev:[],  // [{id,text,icon,cond:{type,nodeId,tableId,threshold}}]
   cam:{x:0,y:0,scale:1},
   lastModified:0,  // v8: только информационное (время последней правки пользователем); В СРАВНЕНИЯХ НЕ УЧАСТВУЕТ
@@ -431,9 +461,11 @@ let S = {
     grantedStepScore:0,    // v7 (часть 5): последний порог, кратный CHEST_STEP (30), за который выдан сундук «шаг очков»
     grantedJubilee:0,      // v7 (часть 5): последнее юбилейное число из ряда nextJubilee(), за которое выдан сундук
     grantedStreaks:{},     // {tableId:[7,30,...]} — уже выданные стрик-сундуки
-    perfectDays:{},        // v7: {dateKey:true} — множество дат, признанных идеальными (см. блок «ИДЕАЛЬНЫЙ ДЕНЬ»)
-    perfectTotal:0,        // v7: число идеальных дней за всё время (только +1/−1 при смене статуса дня)
-    perfectStreak:0,       // v7: текущая серия идеальных дней подряд (хранится, а не считается на лету)
+    perfectDays:{},        // v7: {dateKey:true} — дни, где идеальны ВСЕ 24 часа (v9: единица учёта — час, см. блок «ИДЕАЛЬНЫЙ ДЕНЬ»)
+    perfectHrs:{},         // v9: {dateKey:маска 24 бит} — дни, где идеальна только часть часов
+    perfUnit:'h',          // v9: 'h' = счётчики ниже в часах; в старых сохранениях поля нет (= в днях) — migrate() переводит один раз
+    perfectTotal:0,        // v7→v9: число идеальных ЧАСОВ за всё время (меняется на разницу числа идеальных часов дня)
+    perfectStreak:0,       // v7→v9: текущая серия идеальных ЧАСОВ подряд (пересчитывается из масок при каждом persist())
     history:{d:{},w:{},m:{},y:{},fz:{max:null,sum:0,cnt:0,last:null,ld:null}}, // v7 (часть 4): очки лиги по слоям — см. блок «ИСТОРИЯ ОЧКОВ»
     chests:[],             // [{id,reason}] — невскрытые сундуки
     startDate:null,        // дата нажатия «Старт» гонки
@@ -472,11 +504,55 @@ async function openIDB(){
 const sigOf=o=>{const {lastModified,rev,...rest}=o;return JSON.stringify(rest);};
 let _lastSig=null,_lastRev=null;
 
+// ══════════════════════════════════════════════════
+//  v9 (часть 4): РЕЖИМ «ТОЛЬКО ПРОСМОТР»
+// ══════════════════════════════════════════════════
+// Это локальная настройка УСТРОЙСТВА: лежит в отдельном ключе localStorage, а не в S — поэтому не попадает ни в облако,
+// ни в экспорт, ни в слияние устройств. Переживает перезапуск; выключается всегда и без условий (кнопка 👁 и плашка).
+// Блокируются только действия пользователя, меняющие данные: каждый такой обработчик начинается с roGuard() (при включённом
+// режиме он мигает плашкой и возвращает true). Облако не затронуто: получение данных и отправка уже сделанных правок идут
+// через persist(false) / syncToFb(). Камера (перемещение и масштаб) — это просмотр: сохраняется только локально (persist(false)).
+// Страховка: persist() с правкой пользователя в этом режиме откатывает состояние к последнему сохранённому (roRollback).
+const RO_KEY='dtree_v5_readonly';
+let roMode=false;
+try{roMode=localStorage.getItem(RO_KEY)==='1';}catch(e){}
+function roGuard(){
+  if(!roMode)return false;
+  const b=document.getElementById('ro-banner');
+  if(b){b.classList.remove('flash');void b.offsetWidth;b.classList.add('flash');}
+  return true;
+}
+function roApplyUi(){
+  document.body.classList.toggle('ro',roMode);
+  const b=document.getElementById('bRO');
+  if(b){b.classList.toggle('on',roMode);b.textContent=roMode?'👁 Просмотр: вкл':'👁 Просмотр';}
+}
+function roRollback(){
+  if(_lastSig==null)return;
+  try{
+    const keep={lastModified:S.lastModified,rev:S.rev,cam:S.cam};
+    S=Object.assign(JSON.parse(_lastSig),keep); // _lastSig — содержимое последнего сохранения без служебных lastModified / rev
+    renderAll();
+  }catch(e){console.warn('RO: откат не удался',e);}
+}
+function setReadOnly(on){
+  if(on){ // сначала фиксируем начатое редактирование и сбрасываем режимы «стрелка / удалить», потом закрываем правки
+    try{if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();}catch(e){}
+    setMode('nav');dragging=null;panning=null;
+  }
+  roMode=!!on;
+  try{localStorage.setItem(RO_KEY,roMode?'1':'0');}catch(e){}
+  roApplyUi();
+  renderAll();
+}
+roApplyUi();
+
 // userEdit=true (по умолчанию) — вызов вызван действием пользователя: если данные реально изменились,
 // состояние помечается «есть неотправленные правки» (fbDirty). userEdit=false — старт, таймер,
 // применение чужих данных, служебные пересчёты: сохраняем локально, но в облако сами по себе не пишем.
 async function persist(userEdit=true){
   if(_resetting)return; // v7: идёт полный сброс — ничего не сохраняем
+  if(roMode&&userEdit){roRollback();return;} // v9 (часть 4): режим просмотра — правка пользователя не сохраняется и откатывается
   compactTablesData(); // v7 (часть 7): старые дни таблиц и идеальные дни → в компактный архив (очки и серии не меняются)
   recomputeProgress(); // v5: проверка лиги/сундуков/стриков перед сохранением
   refreshStatsIfOpen(); // v7 (часть 4): если модалка статистики открыта — график сразу показывает новую сегодняшнюю точку
@@ -564,16 +640,13 @@ function migrate(s){
   if(s.game.perfectArch&&(typeof s.game.perfectArch.to!=='string'||typeof s.game.perfectArch.tail!=='number'))delete s.game.perfectArch;
   Object.values(s.tables||{}).forEach(t=>{
     if(!t.entries||typeof t.entries!=='object')t.entries={};
+    normalizeTableHours(t); // v9: почасовые отметки (старые сохранения без t.hrs проходят без изменений)
     const a=t.arch;
     if(a&&(typeof a.to!=='string'||typeof a.total!=='number'||typeof a.tail!=='number'||typeof a.best!=='number'||typeof a.days!=='number'))delete t.arch;
   });
-  // v7 (часть 3): идеальные дни = множество perfectDays + сохранённые счётчики perfectTotal / perfectStreak.
-  // Устаревшее поле perfectDayDate больше не нужно. Миграция «по минимуму»: если счётчиков нет
-  // (сохранение до части 3) — один раз выводим их из уже имеющегося множества.
-  delete s.game.perfectDayDate;
-  if(!s.game.perfectDays||typeof s.game.perfectDays!=='object'||Array.isArray(s.game.perfectDays))s.game.perfectDays={};
-  if(typeof s.game.perfectTotal!=='number')s.game.perfectTotal=Object.keys(s.game.perfectDays).length;
-  if(typeof s.game.perfectStreak!=='number')s.game.perfectStreak=calcPerfectStreakFor(s.game.perfectDays,s.game.perfectArch);
+  // v9 (часть 2): идеальные ЧАСЫ — perfectDays / perfectHrs / perfUnit / perfGrace и счётчики в часах;
+  // перевод старых сохранений из дней в часы (ровно один раз) и нормализация масок — см. migratePerfect().
+  migratePerfect(s.game);
   // v7 (часть 4): история хранится слоями d/w/m/y (дни/недели/месяцы/годы) + fz (скаляры свёрнутой части).
   // Старый плоский формат {dateKey:score} просто переносится в слой дней (дальше его свернёт compactHistory).
   {
@@ -609,6 +682,77 @@ function localKey(d){
   return `${y}-${m}-${dd}`;
 }
 function todayKey(){return localKey(new Date());}
+
+// ══════════════════════════════════════════════════
+//  ЧАСЫ ВНУТРИ ДНЯ ЯЧЕЙКИ ТАБЛИЦЫ (v9, часть 1 почасовой разметки)
+// ══════════════════════════════════════════════════
+/*
+  Ячейка таблицы = (день, привычка). Раньше она была булевой, теперь внутри неё 24 часа (бит h = час h:00–h+1:00).
+  Хранение — без дублирования и без миграции старых данных:
+    • день отмечен ЦЕЛИКОМ (все 24 часа)  → t.entries[день][привычка]=true — ровно как раньше, поэтому
+      nodeVal() / streak() / архив / статистика / очки / сундуки продолжают работать БЕЗ изменений, а все старые
+      отметки автоматически читаются как «отмечены все 24 часа»;
+    • отмечена только ЧАСТЬ часов          → t.hrs[день][привычка]=маска (1…2^24−2); entries для этой ячейки нет,
+      поэтому значение таблицы не растёт (+1 только за полностью выполненный день);
+    • ничего не отмечено                   → нет записей вообще.
+  Итого полный день и «все 24 часа» — одно и то же состояние, расхождения невозможны по построению;
+  normalizeTableHours() дополнительно чинит редкие рассинхроны после слияния данных двух устройств.
+*/
+const HOURS=24,HFULL=(1<<HOURS)-1;
+function popcnt(m){let n=0;m=m>>>0;while(m){m&=m-1;n++;}return n;}
+// Маска отмеченных часов ячейки (старые «галочки» entries=true читаются как полный день).
+function cellMask(t,dk,tk){
+  const e=t.entries&&t.entries[dk];
+  if(e&&e[tk])return HFULL;
+  const h=t.hrs&&t.hrs[dk];
+  const m=h&&h[tk];
+  return(typeof m==='number')?(m&HFULL):0;
+}
+// Записывает маску ячейки, поддерживая инвариант хранения (см. выше). Ничего не пересчитывает — только данные.
+function setCellMask(t,dk,tk,mask){
+  mask=mask&HFULL;
+  if(!t.entries)t.entries={};
+  if(mask===HFULL){
+    (t.entries[dk]||(t.entries[dk]={}))[tk]=true;
+  }else if(t.entries[dk]){
+    delete t.entries[dk][tk];
+    if(!Object.keys(t.entries[dk]).length)delete t.entries[dk];
+  }
+  if(mask===HFULL||mask===0){
+    if(t.hrs&&t.hrs[dk]){
+      delete t.hrs[dk][tk];
+      if(!Object.keys(t.hrs[dk]).length)delete t.hrs[dk];
+      if(!Object.keys(t.hrs).length)delete t.hrs;
+    }
+  }else{
+    if(!t.hrs)t.hrs={};
+    (t.hrs[dk]||(t.hrs[dk]={}))[tk]=mask;
+  }
+}
+// Приводит t.hrs к инварианту: мусор выбрасывается, полная маска → entries=true, пустая → удаляется,
+// если день уже целиком отмечен в entries — entries главнее. Возвращает true, если что-то изменилось.
+function normalizeTableHours(t){
+  if(t.hrs===undefined)return false;
+  if(!t.hrs||typeof t.hrs!=='object'||Array.isArray(t.hrs)){delete t.hrs;return true;}
+  if(!t.entries)t.entries={};
+  let ch=false;
+  for(const dk of Object.keys(t.hrs)){
+    const day=t.hrs[dk];
+    if(!_DATE_RE.test(dk)||!day||typeof day!=='object'||Array.isArray(day)){delete t.hrs[dk];ch=true;continue;}
+    for(const tk of Object.keys(day)){
+      const raw=day[tk];
+      if(typeof raw!=='number'||!isFinite(raw)){delete day[tk];ch=true;continue;}
+      const m=raw&HFULL;
+      if(t.entries[dk]&&t.entries[dk][tk]){delete day[tk];ch=true;continue;}
+      if(m===HFULL){(t.entries[dk]||(t.entries[dk]={}))[tk]=true;delete day[tk];ch=true;continue;}
+      if(m===0){delete day[tk];ch=true;continue;}
+      if(m!==raw){day[tk]=m;ch=true;}
+    }
+    if(!Object.keys(day).length){delete t.hrs[dk];ch=true;}
+  }
+  if(!Object.keys(t.hrs).length){delete t.hrs;ch=true;}
+  return ch;
+}
 
 // ══════════════════════════════════════════════════
 //  VALUE COMPUTATION
@@ -684,6 +828,14 @@ function compactTableEntries(t,boundary){
     for(const id of Object.keys(day)){if(day[id])any=true;else{delete day[id];changed=true;}}
     if(!any){delete E[k];changed=true;}
   }
+  // (а-2) v9: почасовые отметки приводим к инварианту; частичные дни ≤ границы / ≤ arch.to не архивируем —
+  //        день, не выполненный целиком, ни в значение таблицы, ни в серии не входит (как и раньше).
+  if(normalizeTableHours(t))changed=true;
+  if(t.hrs){
+    const cut=(t.arch&&typeof t.arch.to==='string'&&t.arch.to>boundary)?t.arch.to:boundary;
+    for(const dk of Object.keys(t.hrs))if(dk<=cut){delete t.hrs[dk];changed=true;}
+    if(!Object.keys(t.hrs).length){delete t.hrs;changed=true;}
+  }
   // (б) перенос дней ≤ границы в архив
   let a=t.arch;
   const old=(a&&typeof a.to==='string')?a.to:null;
@@ -710,23 +862,26 @@ function compactTableEntries(t,boundary){
   return changed;
 }
 
-// Идеальные дни: те же правила — дни ≤ boundary вычёркиваются из множества, а серию на границе помнит perfectArch.tail.
-// perfectTotal (общее число идеальных дней) хранится отдельным числом и не меняется.
+// Идеальные часы: те же правила — дни ≤ boundary вычёркиваются из perfectDays / perfectHrs, а серию на границе помнит
+// perfectArch.tail (v9: в ЧАСАХ — идеальные часы подряд, заканчивающиеся в 23:00 дня to).
+// perfectTotal (общее число идеальных часов) хранится отдельным числом и не меняется.
 function archivePerfectDays(boundary){
-  const G=S.game,P=G.perfectDays;
+  const G=S.game,P=G.perfectDays,H=G.perfectHrs||(G.perfectHrs={});
   let a=G.perfectArch;
   const old=(a&&typeof a.to==='string')?a.to:null;
   const B=(old&&old>boundary)?old:boundary;
-  const keys=Object.keys(P).filter(k=>k<=B);
-  if(!keys.length&&!old)return false;
-  // серия идеальных дней, заканчивающаяся ровно в B (может продолжаться в уже заархивированной части)
-  let run=0,k=B,guard=0;
-  while(guard++<40000){
+  const keys=Object.keys(P).filter(k=>k<=B),hkeys=Object.keys(H).filter(k=>k<=B);
+  if(!keys.length&&!hkeys.length&&!old)return false;
+  // серия идеальных часов, заканчивающаяся ровно в 23:00 дня B (может продолжаться в уже заархивированной части)
+  let run=0,k=B;
+  for(let guard=0;guard<40000;guard++){
     if(old&&k===old){run+=(a.tail||0);break;}
-    if(!P[k])break;
-    run++;k=ymdAddDays(k,-1);
+    const r=runDown(perfMaskIn(G,k),HOURS-1);
+    run+=r;
+    if(r<HOURS)break; // цепочка оборвалась внутри дня
+    k=ymdAddDays(k,-1);
   }
-  keys.forEach(x=>delete P[x]);
+  keys.forEach(x=>delete P[x]);hkeys.forEach(x=>delete H[x]);
   G.perfectArch={to:B,tail:run};
   return true;
 }
@@ -893,7 +1048,7 @@ function fbApplyRemote(raw){
   if(!fbDirty){
     S=remote;
   }else{
-    let base=null;try{base=fbBase?JSON.parse(fbBase):null;}catch(e){}
+    let base=null;try{base=fbBase?migrate(JSON.parse(fbBase)):null;}catch(e){} // v9: база приводится к тем же единицам (часы), что и обе стороны слияния
     if(base&&(base.rev||null)!==(S.rev||null))base=null; // база от другого снимка — для слияния не годится
     const lm=S.lastModified;
     const merged=m3(base||{},S,remote);
@@ -1136,6 +1291,7 @@ function initFirebase(){
 //  AUTO-LAYOUT (dagre)
 // ══════════════════════════════════════════════════
 document.getElementById('bAuto').addEventListener('click',()=>{
+  if(roGuard())return; // v9 (часть 4)
   if(!window.dagre){
     alert('Библиотека авто-раскладки не загружена.\nПроверьте интернет-соединение и перезагрузите страницу.');
     return;
@@ -1242,13 +1398,13 @@ function buildNode(n){
     e.stopPropagation();e.preventDefault();
     if(mode==='nav'&&!dragging){startEdit(n,tx);}
   });
-  tx.addEventListener('blur',()=>{n.text=tx.textContent.trim()||'Рамка';tx.contentEditable='false';persist();});
+  tx.addEventListener('blur',()=>{if(roMode){tx.contentEditable='false';tx.textContent=n.text||'Рамка';return;}n.text=tx.textContent.trim()||'Рамка';tx.contentEditable='false';persist();});
   tx.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();tx.blur();}});
   top.appendChild(tx);
 
   const acts=document.createElement('div');acts.className='nacts';
   const eb=mib('✎','e','Редактировать');eb.addEventListener('click',e=>{e.stopPropagation();startEdit(n,tx);});
-  const db=mib('✕','','Удалить');db.addEventListener('click',e=>{e.stopPropagation();if(confirm('Удалить рамку?'))delNode(n.id);});
+  const db=mib('✕','','Удалить');db.addEventListener('click',e=>{e.stopPropagation();if(roGuard())return;if(confirm('Удалить рамку?'))delNode(n.id);});
   acts.appendChild(eb);acts.appendChild(db);top.appendChild(acts);
   el.appendChild(top);
 
@@ -1261,36 +1417,36 @@ function buildNode(n){
       const row=document.createElement('div');row.className='cbrow';
       const cb=document.createElement('input');cb.type='checkbox';
       cb.checked=cbObj.checked;
-      cb.addEventListener('change',e=>{e.stopPropagation();cbObj.checked=cb.checked;if(cb.checked)sfxCheck();persist();renderAll();}); // v7 (часть 6): звук и в обычных рамках
+      cb.addEventListener('change',e=>{e.stopPropagation();if(roGuard()){cb.checked=cbObj.checked;return;}cbObj.checked=cb.checked;if(cb.checked)sfxCheck();persist();renderAll();}); // v7 (часть 6): звук и в обычных рамках
 
       const lbl=document.createElement('div');lbl.className='cblabel';
       lbl.contentEditable='false';lbl.textContent=cbObj.label||'Галочка '+(i+1);
       lbl.title='Дважды кликните для редактирования';
       lbl.addEventListener('dblclick',e=>{
-        e.stopPropagation();lbl.contentEditable='true';lbl.focus();
+        e.stopPropagation();if(roGuard())return;lbl.contentEditable='true';lbl.focus();
         const sel=window.getSelection();const r=document.createRange();
         r.selectNodeContents(lbl);r.collapse(false);sel.removeAllRanges();sel.addRange(r);
       });
       // FIX v3: single tap also opens edit on mobile
       lbl.addEventListener('touchend',e=>{
         e.stopPropagation();e.preventDefault();
-        lbl.contentEditable='true';lbl.focus();
+        if(roGuard())return;lbl.contentEditable='true';lbl.focus();
         setTimeout(()=>{
           try{const sel=window.getSelection();const r=document.createRange();
           r.selectNodeContents(lbl);sel.removeAllRanges();sel.addRange(r);}catch(ex){}
         },50);
       });
-      lbl.addEventListener('blur',()=>{cbObj.label=lbl.textContent.trim()||'Галочка '+(i+1);lbl.contentEditable='false';persist();});
+      lbl.addEventListener('blur',()=>{if(roMode){lbl.contentEditable='false';lbl.textContent=cbObj.label||'Галочка '+(i+1);return;}cbObj.label=lbl.textContent.trim()||'Галочка '+(i+1);lbl.contentEditable='false';persist();});
       lbl.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();lbl.blur();}});
 
       const delCb=mib('✕','','Удалить галочку');
       delCb.style.fontSize='9px';delCb.style.width='16px';delCb.style.height='16px';
-      delCb.addEventListener('click',e=>{e.stopPropagation();n.checkboxes.splice(i,1);persist();renderAll();});
+      delCb.addEventListener('click',e=>{e.stopPropagation();if(roGuard())return;n.checkboxes.splice(i,1);persist();renderAll();});
 
       row.appendChild(cb);row.appendChild(lbl);row.appendChild(delCb);body.appendChild(row);
     });
     const addCb=document.createElement('button');addCb.className='minicbtn';addCb.textContent='＋ Галочка';
-    addCb.addEventListener('click',e=>{e.stopPropagation();n.checkboxes.push({checked:false,label:'Галочка '+(n.checkboxes.length+1)});persist();renderAll();});
+    addCb.addEventListener('click',e=>{e.stopPropagation();if(roGuard())return;n.checkboxes.push({checked:false,label:'Галочка '+(n.checkboxes.length+1)});persist();renderAll();});
     body.appendChild(addCb);
   }
 
@@ -1317,6 +1473,7 @@ function mib(icon,cls,title){
   const b=document.createElement('button');b.className='nibtn '+cls;b.textContent=icon;b.title=title;return b;
 }
 function startEdit(n,tx){
+  if(roGuard())return; // v9 (часть 4)
   tx.contentEditable='true';tx.focus();
   const r=document.createRange();r.selectNodeContents(tx);r.collapse(false);
   const s=window.getSelection();s.removeAllRanges();s.addRange(r);
@@ -1357,6 +1514,7 @@ function onMD(e,id){
   if(e.button!==0)return;
   const tg=e.target;
   if(tg.tagName==='BUTTON'||tg.tagName==='INPUT'||tg.contentEditable==='true')return;
+  if(roMode)return; // v9 (часть 4): просмотр — рамки не таскаем; событие всплывёт до холста и сдвинет камеру
   // FIX v3: handle conn/del modes on desktop
   if(mode==='conn'){e.stopPropagation();connectClick(id);return;}
   if(mode==='del'){e.stopPropagation();if(confirm('Удалить "'+S.nodes[id].text+'"?'))delNode(id);return;}
@@ -1385,7 +1543,7 @@ document.addEventListener('mousemove',e=>{
 
 document.addEventListener('mouseup',()=>{
   if(dragging){document.getElementById('nd-'+dragging.id)?.classList.remove('drag');dragging=null;persist();}
-  if(panning){panning=null;persist();}
+  if(panning){panning=null;persist(!roMode);}
 });
 
 cw.addEventListener('wheel',e=>{
@@ -1410,6 +1568,7 @@ function onTS(e,id){
   // FIX v3: if tapping a button/input/editable, let native events handle it — don't start long press
   const tg=e.target;
   if(tg.tagName==='BUTTON'||tg.tagName==='INPUT'||tg.contentEditable==='true'){return;}
+  if(roMode)return; // v9 (часть 4): просмотр — долгое нажатие и перетаскивание рамок отключены (камеру двигает общий обработчик ниже)
   e.stopPropagation();
   const t=e.touches[0];
   lpTx=t.clientX;lpTy=t.clientY;
@@ -1450,7 +1609,7 @@ document.addEventListener('touchstart',e=>{
     pinch={dist:Math.sqrt(dx*dx+dy*dy),mx:(t1.clientX+t2.clientX)/2,my:(t1.clientY+t2.clientY)/2};
     panning=null;return;
   }
-  if(e.target===cw||e.target===cv||e.target.id==='svg'||e.target.id==='ag'){
+  if(e.target===cw||e.target===cv||e.target.id==='svg'||e.target.id==='ag'||(roMode&&e.target.closest&&e.target.closest('.node'))){
     const t=e.touches[0];
     panning={sx:t.clientX-S.cam.x,sy:t.clientY-S.cam.y};
   }
@@ -1496,7 +1655,7 @@ document.addEventListener('touchend',e=>{
   pinch=null;
   if(lpTimer){clearTimeout(lpTimer);lpTimer=null;}
   if(dragging){document.getElementById('nd-'+dragging.id)?.classList.remove('drag');dragging=null;persist();}
-  if(panning){panning=null;persist();}
+  if(panning){panning=null;persist(!roMode);}
 },{passive:true});
 
 // ══════════════════════════════════════════════════
@@ -1506,6 +1665,7 @@ let mode='nav';
 let connSrc=null;
 
 function setMode(m){
+  if(roMode&&m!=='nav'){roGuard();m='nav';} // v9 (часть 4): «стрелка» и «удалить» в режиме просмотра недоступны
   mode=m;
   if(connSrc){document.getElementById('nd-'+connSrc)?.classList.remove('cs');connSrc=null;}
   document.getElementById('bConn').classList.toggle('on',m==='conn');
@@ -1529,6 +1689,7 @@ function connectClick(id){
 }
 
 function delNode(id){
+  if(roGuard())return; // v9 (часть 4)
   const n=S.nodes[id];if(n?.tableId)delete S.tables[n.tableId];
   delete S.nodes[id];S.conns=S.conns.filter(c=>c.from!==id&&c.to!==id);
   persist();renderAll();
@@ -1561,6 +1722,7 @@ function modal(html,setup){
 //  ADD NODE
 // ══════════════════════════════════════════════════
 document.getElementById('bAdd').addEventListener('click',()=>{
+  if(roGuard())return; // v9 (часть 4)
   const cp=s2c(cw.offsetWidth/2,cw.offsetHeight/2);
   const pos=smartPlace(cp.x-80,cp.y-40);
   const id=gid('n');
@@ -1572,6 +1734,7 @@ document.getElementById('bAdd').addEventListener('click',()=>{
 //  TABLE
 // ══════════════════════════════════════════════════
 document.getElementById('bTbl').addEventListener('click',()=>{
+  if(roGuard())return; // v9 (часть 4)
   modal(`
     <h2>📅 <span>Новая таблица привычек</span></h2>
     <div class="f"><label>Название таблицы</label>
@@ -1619,6 +1782,8 @@ function openTable(tid){
   // v7 (часть 7): пустые {} на 730 дней больше не создаём (они раздували сохранение) — entries читаются безопасно.
 
   const todK=todayKey();
+  const hh=h=>String(h).padStart(2,'0');
+  const cellTitle=m=>m===HFULL?'Отмечены все 24 часа':(m?'Отмечено часов: '+popcnt(m)+' из '+HOURS:'');
   let thead='<th class="dth">Дата</th>';
   tbl.tasks.forEach(tk=>{thead+='<th>'+tk.name+'</th>';});
   let rows='';
@@ -1627,21 +1792,22 @@ function openTable(tid){
     // v7: никаких замочков и блокировок — любой прошлый день можно отметить в любой момент.
     const d=new Date(dk+'T12:00');
     const lbl=d.toLocaleDateString('ru-RU',{day:'numeric',month:'short',year:'numeric',weekday:'short'});
-    rows+=`<tr class="${isTd?'today':''}"><td class="dtd">${lbl}${isTd?' ◀':''}</td>`;
+    rows+=`<tr data-dk="${dk}" class="${isTd?'today':''}"><td class="dtd"><button type="button" class="hx" data-x="${dk}" title="Отметить по часам">🕐</button>${lbl}${isTd?' ◀':''}</td>`;
     tbl.tasks.forEach(tk=>{
-      const chk=(tbl.entries[dk]||{})[tk.id]||false;
-      rows+=`<td><input type="checkbox" data-d="${dk}" data-t="${tk.id}" ${chk?'checked':''}></td>`;
+      const m=cellMask(tbl,dk,tk.id);
+      rows+=`<td><input type="checkbox" data-d="${dk}" data-t="${tk.id}" ${m===HFULL?'checked':(m?'data-p="1"':'')} title="${cellTitle(m)}"></td>`;
     });
     rows+='</tr>';
   });
 
-  const ov=modal(`
+  modal(`
     <h2>📅 <span>${tbl.name}</span></h2>
     <div class="sbar">
-      <div><div class="sv">🔥 ${str}</div><div class="sl">дней подряд</div></div>
-      <div class="tv">Всего отмечено:<br><b>${total}</b> раз</div>
+      <div><div class="sv" id="tb-str">🔥 ${str}</div><div class="sl">дней подряд</div></div>
+      <div class="tv">Всего отмечено:<br><b id="tb-tot">${total}</b> раз</div>
     </div>
     ${tableArchiveHtml(tbl)}
+    <div class="hhint">🕐 слева от даты — отметка по часам. Галочка дня ставится сама, когда отмечены все 24 часа, и наоборот: галочка дня отмечает все часы. Если отмечена только часть часов, в клетке видна черта, а значение таблицы не растёт.</div>
     <div class="tscroll"><table><thead><tr>${thead}</tr></thead><tbody>${rows}</tbody></table></div>
     <div class="atrow">
       <input type="text" id="ntkn" placeholder="Название нового столбца…">
@@ -1650,33 +1816,93 @@ function openTable(tid){
     <div class="brow" style="margin-top:12px">
       <button class="mbtn cancel" id="tclose">Закрыть</button>
     </div>`,ov=>{
-    // Scroll table to top (today is first row)
     const scroll=ov.querySelector('.tscroll');
+    // Scroll table to top (today is first row)
     if(scroll)setTimeout(()=>{scroll.scrollTop=0;},50);
+    ov.querySelectorAll('input[data-p]').forEach(c=>{c.indeterminate=true;}); // «часть часов» — чёрточка в клетке
 
-    ov.querySelectorAll('[data-d]').forEach(cb=>{
-      cb.addEventListener('change',()=>{
-        const dk=cb.dataset.d,tk=cb.dataset.t;
+    // Таблица может быть заменена целиком (приход данных из облака) — всегда берём актуальный объект.
+    const cur=()=>S.tables[tid]||tbl;
 
-        if(cb.checked)sfxCheck();
-        // v7 (часть 4): считаем, как изменились очки лиги от этой отметки, и сдвигаем историю от дня dk
-        // (для прошлого дня это и есть «пересчёт точки именно этого дня»; для сегодня — живая точка).
-        const mainId=S.settings.mainNodeId,hasMain=!!(mainId&&S.nodes[mainId]);
-        const before=hasMain?Math.round(nodeVal(mainId)):0;
-        if(!tbl.entries[dk])tbl.entries[dk]={};
-        tbl.entries[dk][tk]=cb.checked;
-        shiftHistoryFrom(dk,(hasMain?Math.round(nodeVal(mainId)):0)-before);
-        // v7 (часть 3): пересчитываем статус ТОЛЬКО этого дня (сегодняшнего или прошлого —
-        // ретроактивная отметка), остальные зафиксированные дни не трогаем. true = действие
-        // пользователя → серия пересчитывается всегда (снимает «замороженное» значение после пропуска).
-        checkAndFixPerfectDay(dk,true);
-        persist();renderAll();
+    const refreshHead=()=>{
+      const a=ov.querySelector('#tb-str'),b=ov.querySelector('#tb-tot');
+      if(a)a.textContent='🔥 '+streak(tid);
+      if(b)b.textContent=nid&&S.nodes[nid]?nodeVal(nid):0;
+    };
+    const panelHtml=dk=>{
+      const T=cur(),curH=dk===todayKey()?new Date().getHours():-1;
+      return T.tasks.map(tk=>{
+        const m=cellMask(T,dk,tk.id);
+        let b='';
+        for(let h=0;h<HOURS;h++){
+          b+=`<button type="button" class="hb${((m>>h)&1)?' on':''}${h===curH?' now':''}" data-hd="${dk}" data-ht="${tk.id}" data-h="${h}" title="${hh(h)}:00–${hh((h+1)%24)}:00">${hh(h)}</button>`;
+        }
+        return `<div class="hgrp"><div class="hgh"><span>${tk.name}</span><b>${popcnt(m)}/${HOURS}</b></div><div class="hgrid">${b}</div></div>`;
+      }).join('');
+    };
+    // Обновляет строку дня (галочки / чёрточки / подсказки) и открытую панель часов этого дня.
+    const refreshDay=dk=>{
+      const T=cur(),tr=scroll.querySelector(`tr[data-dk="${dk}"]`);if(!tr)return;
+      T.tasks.forEach(tk=>{
+        const cb=tr.querySelector(`input[data-t="${tk.id}"]`);if(!cb)return;
+        const m=cellMask(T,dk,tk.id);
+        cb.checked=m===HFULL;cb.indeterminate=m!==0&&m!==HFULL;cb.title=cellTitle(m);
       });
+      const nx=tr.nextElementSibling;
+      if(nx&&nx.classList.contains('hrow'))nx.querySelector('.hpanel').innerHTML=panelHtml(dk);
+    };
+    const togglePanel=dk=>{
+      const tr=scroll.querySelector(`tr[data-dk="${dk}"]`);if(!tr)return;
+      const nx=tr.nextElementSibling;
+      if(nx&&nx.classList.contains('hrow')){nx.remove();return;}
+      const hr=document.createElement('tr');hr.className='hrow';
+      hr.innerHTML='<td colspan="'+(1+cur().tasks.length)+'"><div class="hpanel" style="width:'+Math.max(220,scroll.clientWidth-4)+'px">'+panelHtml(dk)+'</div></td>';
+      tr.after(hr);
+    };
+
+    // Единая точка изменения ячейки (клик по галочке дня ИЛИ по часу): обе дорожки дают одну маску,
+    // поэтому «все часы ⇄ галочка дня» не может разойтись. Значение таблицы меняется только при переходе
+    // через границу «день целиком» (nodeVal считает только entries=true).
+    const commitCell=(dk,tk,mask)=>{
+      if(roGuard()){refreshDay(dk);return;} // v9 (часть 4): ячейка возвращается к сохранённому виду
+      const T=cur();mask&=HFULL;
+      const prev=cellMask(T,dk,tk);
+      if(mask===prev){refreshDay(dk);return;}
+      if(popcnt(mask)>popcnt(prev))sfxCheck();
+      // v7 (часть 4): считаем, как изменились очки лиги от этой отметки, и сдвигаем историю от дня dk
+      // (для прошлого дня это и есть «пересчёт точки именно этого дня»; для сегодня — живая точка).
+      const mainId=S.settings.mainNodeId,hasMain=!!(mainId&&S.nodes[mainId]);
+      const before=hasMain?Math.round(nodeVal(mainId)):0;
+      setCellMask(T,dk,tk,mask);
+      shiftHistoryFrom(dk,(hasMain?Math.round(nodeVal(mainId)):0)-before);
+      // v9 (часть 2): пересчитываем статус идеальных часов ТОЛЬКО затронутых этой отметкой часов (prev^mask:
+      // один час — один бит, галочка дня — все изменившиеся часы), остальные часы и дни не трогаем — история
+      // задним числом не переписывается. true = действие пользователя → серия пересчитывается всегда.
+      checkAndFixPerfectDay(dk,true,prev^mask);
+      persist();renderAll();
+      refreshDay(dk);refreshHead();
+    };
+
+    scroll.addEventListener('change',e=>{
+      const cb=e.target;
+      if(!cb.matches||!cb.matches('input[data-d]'))return;
+      commitCell(cb.dataset.d,cb.dataset.t,cb.checked?HFULL:0); // галочка дня → все 24 часа (или ни одного)
+    });
+    scroll.addEventListener('click',e=>{
+      const hb=e.target.closest('.hb');
+      if(hb){
+        const dk=hb.dataset.hd,tk=hb.dataset.ht,h=+hb.dataset.h;
+        commitCell(dk,tk,cellMask(cur(),dk,tk)^(1<<h)); // отметка одного часа
+        return;
+      }
+      const hx=e.target.closest('.hx');
+      if(hx)togglePanel(hx.dataset.x);
     });
     ov.querySelector('#tclose').onclick=()=>ov.remove();
     ov.querySelector('#atk').onclick=()=>{
+      if(roGuard())return; // v9 (часть 4)
       const nm=ov.querySelector('#ntkn').value.trim();if(!nm)return;
-      tbl.tasks.push({id:gid('tk'),name:nm});persist();ov.remove();openTable(tid);
+      cur().tasks.push({id:gid('tk'),name:nm});persist();ov.remove();openTable(tid);
     };
   });
 }
@@ -1694,6 +1920,7 @@ function tableOpts(sel){
 }
 
 document.getElementById('bAch').addEventListener('click',()=>{
+  if(roGuard())return; // v9 (часть 4)
   modal(`
     <h2>🏆 <span>Новая награда</span></h2>
     <div class="f"><label>Текст награды</label>
@@ -1766,7 +1993,7 @@ document.getElementById('bAchV').addEventListener('click',()=>{
     <div class="brow" style="margin-top:14px"><button class="mbtn cancel" id="avc">Закрыть</button></div>`,ov=>{
     ov.querySelector('#avc').onclick=()=>ov.remove();
     ov.querySelectorAll('.adel').forEach(b=>{
-      b.onclick=()=>{S.achiev=S.achiev.filter(a=>a.id!==b.dataset.id);persist();ov.remove();};
+      b.onclick=()=>{if(roGuard())return;S.achiev=S.achiev.filter(a=>a.id!==b.dataset.id);persist();ov.remove();};
     });
   });
 });
@@ -2299,6 +2526,8 @@ function daysSince(dateKey){
 //  ИДЕАЛЬНЫЙ ДЕНЬ
 // ══════════════════════════════════════════════════
 /*
+  [v9, часть 2: единица учёта теперь ЧАС — актуальная модель описана ниже, в блоке «МОДЕЛЬ v9». Всё, что в этом
+  историческом описании сказано о «днях», относится к часам внутри дня; хранение и пересчёт — как в блоке v9.]
   МОДЕЛЬ (v7, часть 3): день «фиксируется» как идеальный / неидеальный, а не пересчитывается
   по всей истории каждый раз. Храним три вещи в S.game:
     perfectDays   — множество дат, признанных идеальными ({dateKey:true});
@@ -2329,68 +2558,185 @@ function daysSince(dateKey){
   (см. archivePerfectDays); общий счётчик perfectTotal хранится отдельно и не меняется.
 */
 
-// Идеален ли день dateKey по ТЕКУЩЕМУ набору таблиц (чистая проверка, состояние не меняет).
-// Правила: таблиц нет вообще — не идеален; все привычки всех таблиц отмечены — идеален.
-// Решение по неоднозначности: таблица без столбцов пропускается, но если привычек нет ни в одной
-// таблице — день не идеален (иначе пустая таблица давала бы «идеальный» день без единого действия).
-function isDayFullyChecked(dateKey){
-  const tids=Object.keys(S.tables);
-  if(!tids.length)return false;
-  let habits=0;
-  for(const tid of tids){
+/*
+  МОДЕЛЬ v9 (часть 2) — ЕДИНИЦА УЧЁТА ЧАС. Час идеален, если он отмечен у КАЖДОЙ привычки КАЖДОЙ таблицы: идеальные часы
+  дня = AND масок всех ячеек (cellMask из части 1), то есть ограничены самой отстающей привычкой; один неотмеченный
+  час в любой таблице — час не идеален и серия рвётся. Хранение в S.game (ключи — даты, как раньше):
+    perfectDays   {день:true}  — идеальны все 24 часа дня (формат совпадает со старым);
+    perfectHrs    {день:маска} — идеальна только часть часов (маска из 24 бит; полная маска сюда не пишется);
+    perfectTotal  — идеальных ЧАСОВ за всё время (меняется на разницу числа единичных бит маски дня);
+    perfectStreak — серия идеальных часов подряд (пересчитывается из масок, см. calcPerfectStreakFor);
+    perfUnit      — 'h' = счётчики в часах; поля нет = старое сохранение в днях (migratePerfect переводит ×24 один раз);
+    perfGrace     — {d,m}: разовый «кредит» часов 0…(h−1) дня обновления. До обновления отмечать часы по отдельности
+                    было нечем, и без кредита живая серия обнулилась бы сразу; учитывается только в perfectMaskOfDay();
+    perfectArch   — {to,tail}: дни ≤ to вычеркнуты из хранилища, tail = серия идеальных часов, заканчивающаяся в 23:00 дня to.
+  Что и когда пересчитывается (параметр hmask в checkAndFixPerfectDay):
+    • сегодняшний день «живой» — все 24 часа при каждом persist() (в т.ч. заранее отмеченные будущие часы суток);
+    • пропущенный день — все 24 часа в догоняющей проверке при запуске (dailyTick → processMissedDay);
+    • ретроактивная отметка — ТОЛЬКО затронутые часы (prev^mask ячейки): остальные часы дня и прошлые дни не переписываются.
+  Серия: назад от ПОСЛЕДНЕГО идеального часа (не от текущего): неотмеченные часы в конце серию не меняют, рвёт её только
+  неотмеченный час между идеальными часами. Если текущий час идеален — вперёд тянется и непрерывная цепочка заранее
+  отмеченных идеальных часов до конца суток. Серия сама не «протухает» при долгом отсутствии отметок — она обрывается,
+  когда после пропуска появляется новый идеальный час (как и раньше с днями: при открытии после пропуска не обнуляем).
+  РЕШЕНИЕ: серия пересчитывается при КАЖДОМ persist(), а не лениво, как было с днями. «Замороженное» значение жило сутки,
+  а при часах устаревало бы каждый час и показывало бы уже оборванную серию.
+*/
+function runDown(m,h){let n=0;while(h>=0&&((m>>h)&1)){n++;h--;}return n;}       // подряд единичных бит ниже h включительно
+function runUp(m,h){let n=0;while(h<HOURS&&((m>>h)&1)){n++;h++;}return n;}      // подряд единичных бит выше h включительно
+// Маска идеальных часов дня dk из хранилища игры G (полный день = все 24 бита). Не зависит от S — её зовёт и migrate().
+function perfMaskIn(G,dk){
+  if(G.perfectDays&&G.perfectDays[dk])return HFULL;
+  const m=G.perfectHrs&&G.perfectHrs[dk];
+  return typeof m==='number'?(m&HFULL):0;
+}
+function perfectDayMask(dk){return perfMaskIn(S.game,dk);}
+// Записывает маску дня в хранилище: полный день → perfectDays, часть → perfectHrs, пусто → ничего. Счётчики не трогает.
+function setPerfectMask(dk,mask){
+  const G=S.game,H=G.perfectHrs||(G.perfectHrs={});
+  mask&=HFULL;
+  if(mask===HFULL){G.perfectDays[dk]=true;delete H[dk];}
+  else{
+    delete G.perfectDays[dk];
+    if(mask)H[dk]=mask;else delete H[dk];
+  }
+}
+// Чинит perfectHrs после импорта / слияния устройств: мусор выбрасывается, полная маска → perfectDays,
+// пустая → удаляется, день, уже записанный в perfectDays как полный, второй раз не хранится.
+function normalizePerfectHrs(G){
+  const H=G.perfectHrs;
+  if(!H||typeof H!=='object'||Array.isArray(H)){G.perfectHrs={};return;}
+  for(const dk of Object.keys(H)){
+    const raw=H[dk];
+    if(!_DATE_RE.test(dk)||typeof raw!=='number'||!isFinite(raw)||G.perfectDays[dk]){delete H[dk];continue;}
+    const m=raw&HFULL;
+    if(m===HFULL){G.perfectDays[dk]=true;delete H[dk];}
+    else if(m===0)delete H[dk];
+    else if(m!==raw)H[dk]=m;
+  }
+}
+// Маска часов дня dk, идеальных по ТЕКУЩИМ таблицам (чистая проверка, состояние не меняет). Привычек нет вообще
+// (таблиц нет / все без столбцов) — 0: пустая таблица не даёт «идеальных» часов без единого действия.
+function perfectMaskOfDay(dk){
+  let m=HFULL,habits=0;
+  for(const tid of Object.keys(S.tables)){
     const t=S.tables[tid];
     if(!t.tasks||!t.tasks.length)continue;
-    const day=t.entries&&t.entries[dateKey];
-    if(!day)return false;
-    for(const tk of t.tasks){
-      if(!day[tk.id])return false;
-      habits++;
-    }
+    for(const tk of t.tasks){m&=cellMask(t,dk,tk.id);habits++;}
   }
-  return habits>0;
+  if(!habits)return 0;
+  const g=S.game.perfGrace;
+  return g&&g.d===dk?(m|(g.m&HFULL)):m; // разовый кредит часов дня обновления
+}
+// Приводит идеальные дни / часы к единому виду и ОДИН РАЗ переводит счётчики из дней в часы. Вызывается из migrate()
+// — то есть при старте, импорте файла и приходе данных из облака; повторное умножение исключено признаком perfUnit.
+function migratePerfect(G){
+  delete G.perfectDayDate;
+  if(!G.perfectDays||typeof G.perfectDays!=='object'||Array.isArray(G.perfectDays))G.perfectDays={};
+  normalizePerfectHrs(G);
+  if(G.perfGrace&&(typeof G.perfGrace.d!=='string'||typeof G.perfGrace.m!=='number'))delete G.perfGrace;
+  const fromDays=G.perfUnit!=='h';
+  if(fromDays){
+    // Старое сохранение: идеальный день = 24 идеальных часа. Счётчик и хвост архива умножаются на 24.
+    const days=typeof G.perfectTotal==='number'?G.perfectTotal:Object.keys(G.perfectDays).length;
+    G.perfectTotal=days*HOURS;
+    if(G.perfectArch)G.perfectArch.tail*=HOURS;
+    G.perfUnit='h';
+    // Серия жива (вчера идеален, сегодня целиком ещё нет): часы 0…(h−1) сегодняшнего дня засчитываются кредитом.
+    const today=todayKey(),hr=new Date().getHours();
+    if(hr>0&&G.perfectDays[ymdAddDays(today,-1)]&&!G.perfectDays[today])G.perfGrace={d:today,m:(1<<hr)-1};
+  }else if(typeof G.perfectTotal!=='number'){
+    G.perfectTotal=Object.keys(G.perfectDays).length*HOURS+Object.values(G.perfectHrs).reduce((s,m)=>s+popcnt(m),0);
+  }
+  if(fromDays||typeof G.perfectStreak!=='number')G.perfectStreak=calcPerfectStreakFor(G);
 }
 
-// Длина непрерывной серии идеальных дней по множеству days: от сегодня назад, если сегодня
-// идеален; иначе со вчера. На первом неидеальном дне останавливаемся.
-// v7 (часть 7): arch = {to,tail} — серия продолжается в архивной части (дни ≤ to вычеркнуты из множества).
-function calcPerfectStreakFor(days,arch){
-  const today=todayKey();
-  let k=days[today]?today:ymdAddDays(today,-1);
-  let n=0;
-  while(n<100000){
-    if(arch&&k<=arch.to){if(k===arch.to)n+=arch.tail||0;break;}
-    if(!days[k])break;
-    n++;k=ymdAddDays(k,-1);
+// Старший установленный бит маски (0…23); для пустой маски −1.
+function topBit(m){return m?31-Math.clz32(m):-1;}
+// Последний день строго раньше day, в котором есть хоть один идеальный час (perfectDays / perfectHrs); нет — null.
+function lastPerfDayBefore(G,day){
+  const arch=G.perfectArch;let best=null;
+  const scan=o=>{for(const k in o){if(k<day&&(!best||k>best)&&(!arch||k>arch.to)&&perfMaskIn(G,k))best=k;}};
+  scan(G.perfectDays);scan(G.perfectHrs);
+  return best;
+}
+// Длина серии идеальных ЧАСОВ по хранилищу G (S.game). v9, часть 3 (исправление): серия считается назад от ПОСЛЕДНЕГО
+// идеального часа, а не от текущего. Ещё не отмеченные часы в конце (между последним идеальным часом и «сейчас») серию не
+// меняют; рвёт её только неотмеченный час МЕЖДУ идеальными часами. Если текущий час идеален — вперёд тянется и непрерывная
+// цепочка заранее отмеченных идеальных часов до конца суток (будущие часы, не прилегающие к текущему, не считаются).
+// perfectArch = {to,tail}: серия продолжается в архиве (дни ≤ to вычеркнуты); tail — серия, заканчивающаяся в 23:00 дня to.
+function calcPerfectStreakFor(G){
+  const now=new Date(),today=localKey(now),h=now.getHours(),arch=G.perfectArch;
+  const mt=perfMaskIn(G,today),upToNow=mt&((2<<h)-1); // идеальные часы сегодняшнего дня до текущего часа включительно
+  let n=0,day=null,top=-1;
+  if(upToNow){
+    day=today;top=topBit(upToNow);
+    if(top===h)n+=runUp(mt,h+1); // текущий час идеален — заранее отмеченные идеальные часы до конца суток тоже в серии
+  }else{
+    day=lastPerfDayBefore(G,today); // сегодня до текущего часа идеальных нет — ищем последний идеальный час в прошлых днях
+    if(day)top=topBit(perfMaskIn(G,day));
+  }
+  if(!day)return arch?(arch.tail||0):0; // в хранилище идеальных часов нет — остаётся только хвост архива
+  for(let g=0;g<40000;g++){
+    if(arch&&day<=arch.to){if(day===arch.to)n+=arch.tail||0;break;}
+    const r=runDown(perfMaskIn(G,day),top);
+    n+=r;
+    if(r<=top)break; // цепочка оборвалась внутри дня: неотмеченный час между идеальными
+    day=ymdAddDays(day,-1);top=HOURS-1;
   }
   return n;
 }
-function recalcPerfectStreak(){S.game.perfectStreak=calcPerfectStreakFor(S.game.perfectDays,S.game.perfectArch);}
+function recalcPerfectStreak(){S.game.perfectStreak=calcPerfectStreakFor(S.game);}
 
-// Фиксирует статус ОДНОГО дня и обновляет perfectDays / perfectTotal / perfectStreak.
-// userAction=true — вызов из обработчика галочки: серия пересчитывается в любом случае.
-// Иначе (persist / догоняющая проверка) серия пересчитывается только если статус дня изменился —
-// поэтому после долгого пропуска она не «схлопывается» сама при открытии приложения.
-// Возвращает true, если статус дня изменился.
-function checkAndFixPerfectDay(dateKey,userAction){
+// Фиксирует статус ЧАСОВ одного дня и обновляет perfectDays / perfectHrs / perfectTotal / perfectStreak.
+// hmask — какие часы пересчитать (по умолчанию все 24: «живой» сегодняшний день и догоняющая проверка; для
+// ретроактивной отметки — только затронутые часы). Остальные часы дня и все остальные дни не трогаются, поэтому
+// история задним числом не переписывается. perfectTotal меняется на разницу числа идеальных часов дня.
+// userAction=true — вызов из обработчика галочки: серия пересчитывается в любом случае; иначе — если маска дня изменилась
+// (при каждом persist() серия дополнительно пересчитывается в recomputeProgress). Возвращает true, если маска дня изменилась.
+function checkAndFixPerfectDay(dateKey,userAction,hmask){
   const G=S.game;
   if(dateKey>todayKey())return false; // будущие дни не оцениваем
-  const now=isDayFullyChecked(dateKey);
-  const was=!!G.perfectDays[dateKey];
-  let changed=false;
-  if(now&&!was){G.perfectDays[dateKey]=true;G.perfectTotal=(G.perfectTotal||0)+1;changed=true;}
-  else if(!now&&was){delete G.perfectDays[dateKey];G.perfectTotal=Math.max(0,(G.perfectTotal||0)-1);changed=true;}
+  if(G.perfectArch&&dateKey<=G.perfectArch.to)return false; // день уже в архиве
+  hmask=(hmask===undefined?HFULL:hmask)&HFULL;
+  if(!hmask)return false;
+  const was=perfectDayMask(dateKey);
+  const now=(was&~hmask)|(perfectMaskOfDay(dateKey)&hmask);
+  const changed=now!==was;
+  if(changed){
+    setPerfectMask(dateKey,now);
+    G.perfectTotal=Math.max(0,(G.perfectTotal||0)+popcnt(now)-popcnt(was));
+  }
   if(changed||userAction)recalcPerfectStreak();
   return changed;
 }
 
-// Обновляет счётчик в правом верхнем углу главного экрана (читает только сохранённые значения).
+// v9 (часть 3): формат счётчиков. Часы → годы / месяцы / недели / дни / часы: 1 дн. = 24 ч, 1 нед. = 7 дн., 1 мес. = 30 дн.,
+// 1 г. = 365 дн.; показываются только ненулевые единицы (от старшей к младшей). Месяцев не больше 11 (12×30 < 365 — остаток
+// 360…364 дней уходит в недели и дни). В скобках — число ПОЛНЫХ дней без остатка часов (≈ hours/24, вниз).
+const PF_UNITS=[['г.',365*24],['мес.',30*24],['нед.',7*24],['дн.',24],['ч',1]];
+function fmtPerfectParts(hours){
+  hours=Math.max(0,Math.floor(Number(hours)||0));
+  let rest=hours;const parts=[];
+  PF_UNITS.forEach(([name,size])=>{
+    let q=Math.floor(rest/size);
+    if(name==='мес.'&&q>11)q=11;
+    rest-=q*size;
+    if(q>0)parts.push(q.toLocaleString('ru-RU')+'\u00A0'+name); // неразрывный пробел: перенос строки только между единицами
+  });
+  return {main:parts.length?parts.join(' '):'0\u00A0ч',days:Math.floor(hours/24).toLocaleString('ru-RU')+'\u00A0дн.'};
+}
+function fmtPerfect(hours){const p=fmtPerfectParts(hours);return p.main+' ('+p.days+')';}
+function fmtPerfectHtml(hours){const p=fmtPerfectParts(hours);return p.main+' <span class="pfd">('+p.days+')</span>';}
+
+// Обновляет счётчик в правом верхнем углу главного экрана (читает только сохранённые значения):
+// крупно с 🔥 — серия подряд, мелко под ней — всего; подписей нет, только числа в формате fmtPerfect().
 function renderPerfectBadge(){
   const st=document.getElementById('pf-streak'),sub=document.getElementById('pf-sub');
   if(!st||!sub||!S.game)return;
   const n=S.game.perfectStreak||0,tot=S.game.perfectTotal||0;
-  st.textContent='🔥 '+n.toLocaleString('ru-RU');
+  st.innerHTML='🔥 '+fmtPerfectHtml(n);
   st.classList.toggle('zero',n===0);
-  sub.textContent='идеальных дней подряд · всего '+tot.toLocaleString('ru-RU');
+  sub.innerHTML=fmtPerfectHtml(tot);
 }
 
 // ══════════════════════════════════════════════════
@@ -2429,7 +2775,7 @@ function competitorScore(c){
 // ══════════════════════════════════════════════════
 function processMissedDay(dateKey){
   recomputeHistoryFor(dateKey,false); // v6: догоняющая точка истории (не затирает уже честно записанную)
-  checkAndFixPerfectDay(dateKey,false); // v7: фиксируем статус дня (без сундука; серию не трогаем, если статус не изменился)
+  checkAndFixPerfectDay(dateKey,false,HFULL); // v9: фиксируем идеальные часы дня (все 24; серия пересчитывается в конце dailyTick)
   rollCompetitorEvents(dateKey);
 }
 function dailyTick(){
@@ -2447,6 +2793,10 @@ function dailyTick(){
     cursor=ymdAddDays(cursor,1);
     guard++;
   }
+  // v9 (часть 2): кредит часов дня обновления отработал (его день закрыт и «запечён» в маску дня) — удаляем;
+  // после закрытия пропущенных дней серия пересчитывается: она либо продолжается, либо прерывается на уровне часов.
+  if(S.game.perfGrace&&S.game.perfGrace.d<today)delete S.game.perfGrace;
+  recalcPerfectStreak();
   compactHistory(); // v7 (часть 4): старые дневные точки сворачиваются в недели / месяцы / годы
 }
 
@@ -2507,6 +2857,7 @@ function showChestOpenAnimation(item,rarity){
   },650);
 }
 function openChestById(chestId){
+  if(roGuard())return; // v9 (часть 4): открытие сундука меняет награды и коллекцию
   const idx=S.game.chests.findIndex(c=>c.id===chestId);
   if(idx<0)return;
   S.game.chests.splice(idx,1);
@@ -2547,7 +2898,7 @@ function renderChestsModal(){
     <div class="brow" style="margin-top:12px"><button class="mbtn cancel" id="chClose">Закрыть</button></div>`,ovv=>{
     ovv.querySelector('#chClose').onclick=()=>ovv.remove();
     ovv.querySelectorAll('button[data-id]').forEach(b=>{
-      b.onclick=()=>{const id=b.dataset.id;ovv.remove();openChestById(id);};
+      b.onclick=()=>{if(roGuard())return;const id=b.dataset.id;ovv.remove();openChestById(id);};
     });
   });
 }
@@ -2936,8 +3287,10 @@ function recomputeProgress(){
       }
     });
   });
-  // v7: сегодняшний день «живой» — оцениваем при каждом persist(); прошлые дни здесь не трогаем.
-  if(checkAndFixPerfectDay(todayKey(),false))changed=true;
+  // v9: сегодняшний день «живой» — оцениваем при каждом persist() все 24 часа (в т.ч. заранее отмеченные будущие
+  // часы суток); прошлые дни здесь не трогаем. Серия в часах «стареет» с каждым часом — пересчитываем при каждом сохранении.
+  if(checkAndFixPerfectDay(todayKey(),false,HFULL))changed=true;
+  recalcPerfectStreak();
   renderLeagueBar();
   return changed;
 }
@@ -3337,6 +3690,7 @@ function renderStatsModal(){
 //  МОДАЛКИ: НАСТРОЙКИ / ГОНКА / ТАБЛИЦА ЛИГ
 // ══════════════════════════════════════════════════
 function renderSettingsModal(){
+  if(roGuard())return; // v9 (часть 4): настройки (в т.ч. сброс и привязка синхронизации) в режиме просмотра закрыты
   const syncIdVal=fbSyncId||getOrCreateSyncId();
   const fbReady=!!FB_CONFIG.apiKey;
   const ov=modal(`<h2>⚙ <span>Настройки геймификации</span></h2>
@@ -3472,8 +3826,9 @@ function renderRaceModal(){
     </div>`,ovv=>{
     ovv.querySelector('#raceClose').onclick=()=>ovv.remove();
     const startBtn=ovv.querySelector('#raceStart');
-    if(startBtn)startBtn.onclick=()=>{S.game.startDate=todayKey();persist();ovv.remove();renderRaceModal();};
+    if(startBtn)startBtn.onclick=()=>{if(roGuard())return;S.game.startDate=todayKey();persist();ovv.remove();renderRaceModal();};
     ovv.querySelector('#cAdd').onclick=()=>{
+      if(roGuard())return; // v9 (часть 4)
       const name=ovv.querySelector('#cName').value.trim();
       const rate=parseFloat(ovv.querySelector('#cRate').value);
       if(!name||!isFinite(rate))return;
@@ -3481,7 +3836,7 @@ function renderRaceModal(){
       persist();ovv.remove();renderRaceModal();
     };
     ovv.querySelectorAll('.lbdel').forEach(b=>{
-      b.onclick=()=>{S.game.competitors=S.game.competitors.filter(c=>c.id!==b.dataset.id);persist();ovv.remove();renderRaceModal();};
+      b.onclick=()=>{if(roGuard())return;S.game.competitors=S.game.competitors.filter(c=>c.id!==b.dataset.id);persist();ovv.remove();renderRaceModal();};
     });
   });
 }
@@ -3509,9 +3864,11 @@ document.getElementById('bExp').addEventListener('click',()=>{
 });
 
 document.getElementById('bImp').addEventListener('click',()=>{
+  if(roGuard())return; // v9 (часть 4)
   document.getElementById('fileInp').click();
 });
 document.getElementById('fileInp').addEventListener('change',e=>{
+  if(roGuard()){e.target.value='';return;} // v9 (часть 4)
   const f=e.target.files[0];if(!f)return;
   const r=new FileReader();
   r.onload=ev=>{
@@ -3533,10 +3890,12 @@ document.getElementById('fileInp').addEventListener('change',e=>{
 // ══════════════════════════════════════════════════
 document.getElementById('bConn').addEventListener('click',()=>setMode(mode==='conn'?'nav':'conn'));
 document.getElementById('bDel').addEventListener('click',()=>setMode(mode==='del'?'nav':'del'));
-document.getElementById('bSave').addEventListener('click',()=>persist());
+document.getElementById('bSave').addEventListener('click',()=>{if(roGuard())return;persist();});
+document.getElementById('bRO').addEventListener('click',()=>setReadOnly(!roMode)); // v9 (часть 4)
+document.getElementById('roOff').addEventListener('click',()=>setReadOnly(false));  // выключить можно всегда, без условий
 
 document.addEventListener('keydown',e=>{
-  if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();persist();}
+  if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();if(!roGuard())persist();}
   if(e.key==='Escape')setMode('nav');
 });
 
@@ -3560,6 +3919,18 @@ document.getElementById('bHelp').addEventListener('click',()=>{
       <li>Число на кружке = сумма галочек снизу по дереву</li>
       <li>Двойной клик на тексте рамки / метке галочки → редактировать</li>
       <li>Листья дерева (без исходящих стрелок) показывают кнопку «＋ Галочка»</li>
+    </ul></div>
+    <div class="isect"><h3>⏱ Идеальные часы и серия (счётчик справа вверху)</h3><ul>
+      <li><b>Идеальный час</b> — час (00–23), отмеченный у <b>каждой</b> привычки <b>каждой</b> таблицы. Не отмечена хотя бы одна привычка — час не идеальный, поэтому идеальных часов в дне не больше, чем у самой отстающей привычки. Полностью выполненный день — это 24 идеальных часа.</li>
+      <li><b>Серия</b> (крупно, с 🔥) — сколько идеальных часов подряд. Считается назад от <b>последнего</b> идеального часа: часы, которые вы ещё не отметили после него (в том числе текущий), серию не ломают. Обрывает серию только неотмеченный час <b>между</b> идеальными часами. Пример: идеальны 10–12, пропуск в 13, идеальны 14–16 → серия 3 ч (14–16). Если долго ничего не отмечать, серия сама не обнуляется — она обрывается, когда после пропуска вы отметите новый идеальный час.</li>
+      <li><b>Всего</b> (мелко, под серией) — все идеальные часы за всё время. Подписей у счётчиков нет: оба показаны одинаково, только числами.</li>
+      <li><b>Как читать значение:</b> часы собираются в дни (24 ч), недели (7 дн.), месяцы (30 дн.) и годы (365 дн.); показываются только ненулевые единицы, например «1 нед. 2 дн. 5 ч».</li>
+      <li><b>Число в скобках</b> — то же значение в полных днях, без остатка часов. Пример: «6 дн. 20 ч (6 дн.)» — это 164 идеальных часа: 6 полных дней и ещё 20 часов.</li>
+    </ul></div>
+    <div class="isect"><h3>👁 Режим «только просмотр»</h3><ul>
+      <li>Кнопка <b>👁 Просмотр</b> в панели включает режим. Пока он включён, внизу видна жёлтая плашка с кнопкой <b>«Выключить»</b>, а по краю экрана идёт рамка — приложение не сломано, просто защищено от случайных правок.</li>
+      <li>Можно двигать и масштабировать дерево, открывать таблицы, статистику, лиги, гонку, коллекцию, награды и сундуки (список), делать экспорт. Нельзя ничего менять: рамки, тексты, стрелки, галочки и часы, таблицы и привычки, награды, сундуки, конкурентов, настройки, импорт.</li>
+      <li>Режим запоминается на этом устройстве и сохраняется после перезапуска, на других устройствах он не включается. Синхронизация работает как обычно: данные из облака приходят, уже сделанные правки отправляются. Выключить режим можно в любой момент.</li>
     </ul></div>
     <div class="isect"><h3>💾 Сохранение данных на Android</h3><ul>
       <li>Данные хранятся в браузере. Иногда Chrome их очищает.</li>
@@ -3773,6 +4144,39 @@ init();
      — sw.js: CACHE поднят до dtree-v7.8.
   ⬜ Идеи на будущее (не обязательны): хранить день как битовую маску по привычкам (id привычки ≈ 20 байт на отметку
      в живом окне — основной вес оставшегося хранилища); помесячная детализация архива, если появится экран статистики.
+
+   ✅ v9, часть 1 — почасовая разметка внутри таблиц привычек:
+     — ячейка (день, привычка) = 24 часа. «День целиком» хранится как раньше (entries=true), частично отмеченный день — в
+       t.hrs[день][привычка]=битовая маска (см. блок «ЧАСЫ ВНУТРИ ДНЯ…»); старые данные мигрировать не нужно (true = все 24 часа);
+     — значение таблицы / серии / очки / сундуки / статистика / архив НЕ менялись: считают только полностью выполненные дни;
+     — окно таблицы: кнопка 🕐 у даты раскрывает панель из 24 часов по каждой привычке; все 24 часа ⇒ галочка дня ставится
+       сама, галочка дня ⇒ все 24 часа; частичный день показан чёрточкой в клетке; ретроактивные правки идут через тот же
+       путь (shiftHistoryFrom + checkAndFixPerfectDay только для этого дня);
+     — normalizeTableHours() вызывается из migrate() и compactTableEntries(): чинит рассинхрон после слияния, частичные дни старше окна отбрасываются;
+     — «идеальные дни» пока считаются по дням (перевод на часы — часть 2), формат счётчика и инструкция — части 3–4, режим просмотра — часть 5.
+
+   ✅ v9, часть 2 — «идеальные дни» переведены на ЧАСЫ (модель и решения — комментарий «МОДЕЛЬ v9» в блоке «ИДЕАЛЬНЫЙ ДЕНЬ»):
+     — час идеален, если отмечен у каждой привычки каждой таблицы (AND масок cellMask); S.game.perfectDays (полный день) +
+       perfectHrs (маска часов частичного дня) + perfUnit:'h' + perfGrace; perfectTotal / perfectStreak / perfectArch.tail — в часах;
+     — migratePerfect() (из migrate()): старое сохранение ×24 ровно один раз (защита — perfUnit), живая серия (вчера идеален)
+       получает кредит часов 0…(h−1) сегодняшнего дня; normalizePerfectHrs() чинит маски после импорта / слияния;
+     — checkAndFixPerfectDay(день,userAction,hmask): сегодня — все 24 часа при каждом persist(), пропущенные дни — все 24 часа
+       в dailyTick, ретроактивная отметка — только затронутые часы (prev^mask); perfectTotal меняется на разницу числа часов;
+     — серия считается в часах (calcPerfectStreakFor(G)) от текущего часа назад + заранее отмеченные идеальные часы до конца суток,
+       пересчитывается при каждом persist() и в конце dailyTick; архив perfectArch.tail хранится в часах;
+     — слияние: база слияния тоже проходит migrate(), так что единицы у всех трёх сторон одинаковы;
+     — счётчик на главном экране показывает часы («идеальных часов подряд · всего N»); sw.js: CACHE поднят до dtree-v8.2.
+   ✅ v9, часть 3 — ИСПРАВЛЕНА серия идеальных часов: считается назад от ПОСЛЕДНЕГО идеального часа (calcPerfectStreakFor +
+     lastPerfDayBefore), неотмеченные часы в конце не ломают серию, неотмеченный час между идеальными — ломает;
+   ✅ v9, часть 3 — формат счётчиков: fmtPerfect() — «6 дн. 20 ч (6 дн.)» (1 дн.=24 ч, 1 нед.=7 дн., 1 мес.=30 дн., 1 г.=365 дн.,
+     в скобках полные дни), подписей «идеальных … подряд · всего» нет; в справке (кнопка ❓) добавлен раздел про идеальные часы;
+     sw.js: CACHE поднят до dtree-v8.3.
+   ✅ v9, часть 4 — режим «только просмотр» (кнопка 👁 в панели и плашка «Выключить»): roMode хранится в localStorage['dtree_v5_readonly']
+     (локально, не в S → не синхронизируется и не попадает в экспорт); roGuard() в начале каждого обработчика, меняющего данные
+     (рамки, тексты, галочки, стрелки, таблицы, часы, привычки, награды, сундуки, конкуренты, настройки, импорт, сохранение);
+     камера двигается и сохраняется локально через persist(!roMode); страховка — persist(true) в режиме просмотра откатывает
+     состояние (roRollback); облако не затронуто (persist(false)/syncToFb). sw.js: CACHE поднят до dtree-v8.4.
+     ⬜ Новые обработчики, меняющие данные, обязаны начинаться с roGuard().
 
   Все данные (лиги, сундуки, коллекция, история) продолжают храниться
   под тем же ключом dtree_v5 и синхронизироваться через тот же Firebase-путь —
