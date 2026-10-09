@@ -3,7 +3,7 @@
 // полностью работало без интернета: открытие, добавление рамок, галочки,
 // привычки, лиги, сундуки — всё это уже работает на локальных данных.
 
-const CACHE = 'dtree-v8.4'; // v8.4: HTML изменился (v9, часть 4: режим «только просмотр») — версия поднята. Ранее v8.3: HTML изменился (v9, часть 3: исправлена серия идеальных часов — от последнего идеального часа; новый формат счётчиков; инструкция) — версия поднята. Ранее v8.2: HTML изменился (v9, часть 2: идеальные ЧАСЫ вместо идеальных дней, миграция счётчиков) — версия поднята. Ранее v8.1: HTML изменился (v9, часть 1: почасовая разметка внутри таблиц привычек) — версия поднята. Ранее v8.0: HTML изменился (синхронизация: ревизии rev, транзакции, слияние, нет слепых записей). Ранее v7.8: HTML изменился (часть 6: лимитер вместо компрессора, громкости; часть 7: архив старых данных таблиц) — версия поднята
+const CACHE = 'dtree-v8.5'; // v8.5: v9, часть 5 — страница (HTML) берётся «сеть-первой» (при интернете — всегда свежая с первого открытия, без сети — из кэша), старые вкладки перезагружаются при смене версии; камера не синхронизируется; индикатор версии. Ранее v8.4: HTML изменился (v9, часть 4: режим «только просмотр») — версия поднята. Ранее v8.3: HTML изменился (v9, часть 3: исправлена серия идеальных часов — от последнего идеального часа; новый формат счётчиков; инструкция) — версия поднята. Ранее v8.2: HTML изменился (v9, часть 2: идеальные ЧАСЫ вместо идеальных дней, миграция счётчиков) — версия поднята. Ранее v8.1: HTML изменился (v9, часть 1: почасовая разметка внутри таблиц привычек) — версия поднята. Ранее v8.0: HTML изменился (синхронизация: ревизии rev, транзакции, слияние, нет слепых записей). Ранее v7.8: HTML изменился (часть 6: лимитер вместо компрессора, громкости; часть 7: архив старых данных таблиц) — версия поднята
 
 // Файлы самого приложения (тот же каталог, что и sw.js)
 const APP_SHELL = [
@@ -27,7 +27,8 @@ self.addEventListener('install', e => {
     caches.open(CACHE).then(async cache => {
       // Свои файлы — должны закэшироваться обязательно
       try {
-        await cache.addAll(APP_SHELL);
+        // cache:'reload' — в новый кэш попадает именно свежая версия с сервера, а не копия из HTTP-кэша браузера
+        await cache.addAll(APP_SHELL.map(u => new Request(u, { cache: 'reload' })));
       } catch (err) {
         console.warn('SW: не удалось закэшировать APP_SHELL', err);
       }
@@ -47,20 +48,67 @@ self.addEventListener('install', e => {
   self.skipWaiting();
 });
 
-// ── Активация: удаляем старые кэши ──
+// ── Активация: удаляем старые кэши, берём под контроль открытые вкладки ──
+// После этого сообщаем вкладкам о новой версии: вкладка с актуальным кодом отвечает «я новая» и ничего не делает;
+// вкладка, которая не ответила (открыта на СТАРОМ коде, где этого обработчика ещё нет), перезагружается —
+// теперь страница берётся с сервера, и устройство сразу работает на актуальной версии, а не со второго открытия.
 self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(k => k !== CACHE).map(k => {
-          console.log('SW: удаляю старый кэш', k);
-          return caches.delete(k);
-        })
-      )
-    )
-  );
-  self.clients.claim();
+  e.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(
+      keys.filter(k => k !== CACHE).map(k => {
+        console.log('SW: удаляю старый кэш', k);
+        return caches.delete(k);
+      })
+    );
+    await self.clients.claim();
+    await refreshClients();
+  })());
 });
+
+async function refreshClients() {
+  // Только вкладки этого приложения (в пределах scope SW) — чужие вкладки того же домена не трогаем
+  const list = (await self.clients.matchAll({ type: 'window' })).filter(c => c.url.startsWith(self.registration.scope));
+  await Promise.all(list.map(async c => {
+    const acked = await new Promise(res => {
+      const ch = new MessageChannel();
+      const t = setTimeout(() => res(false), 2000);
+      ch.port1.onmessage = () => { clearTimeout(t); res(true); };
+      try { c.postMessage({ type: 'sw-activated', cache: CACHE }, [ch.port2]); }
+      catch (err) { clearTimeout(t); res(false); }
+    });
+    if (!acked) { try { await c.navigate(c.url); } catch (err) {} }
+  }));
+}
+
+const NAV_TIMEOUT_MS = 4000; // дольше этого ждать сервер не будем — открываем из кэша (обновление всё равно докачается и сохранится)
+const offlineResponse = () => new Response('Приложение офлайн, а этот ресурс ещё не закэширован. Откройте приложение онлайн один раз, чтобы он сохранился для офлайн-режима.', {
+  status: 503,
+  headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+});
+
+async function networkFirstPage(e, req) {
+  const cache = await caches.open(CACHE);
+  const shellKey = new URL('tree_app_v5.html', self.registration.scope).href;
+  // cache:'no-cache' — сверяемся с сервером (условный запрос), а не берём копию из HTTP-кэша браузера
+  const netP = fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' }).then(resp => {
+    if (resp && resp.ok) {
+      // Клонируем сразу, до того как тело прочитает браузер. Под ключом shellKey лежит «главная» — для офлайна при любом URL.
+      cache.put(req, resp.clone()).catch(() => {});
+      cache.put(shellKey, resp.clone()).catch(() => {});
+    }
+    return resp;
+  });
+  netP.catch(() => {});
+  try { e.waitUntil(netP.catch(() => {})); } catch (err) {} // дать докачаться и сохраниться, даже если мы уже ответили из кэша
+  const cached = (await cache.match(req)) || (await cache.match(shellKey));
+  if (!cached) return netP.catch(offlineResponse); // в кэше ничего нет — единственный вариант: сеть
+  try {
+    const resp = await Promise.race([netP, new Promise(res => setTimeout(() => res(null), NAV_TIMEOUT_MS))]);
+    if (resp && resp.ok) return resp;
+  } catch (err) { /* офлайн — идём в кэш */ }
+  return cached;
+}
 
 // ── Fetch: кэш-первым (cache-first) с фоновым обновлением,
 //    плюс офлайн-фолбэк на закэшированную главную страницу для навигации ──
@@ -74,6 +122,15 @@ self.addEventListener('fetch', e => {
   if (url.includes('firebaseio.com') ||
       url.includes('firebasedatabase.app') ||
       url.includes('.info/connected')) {
+    return;
+  }
+
+  // Сама страница (HTML) — «сеть-первой»: при интернете всегда берём свежую версию с сервера (и обновляем кэш),
+  // без интернета (или если сервер не ответил за NAV_TIMEOUT_MS) — отдаём последнюю сохранённую из кэша.
+  const isPage = new URL(url).origin === self.location.origin &&
+    (req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html'));
+  if (isPage) {
+    e.respondWith(networkFirstPage(e, req));
     return;
   }
 
@@ -104,10 +161,7 @@ self.addEventListener('fetch', e => {
           const shell = await caches.match('tree_app_v5.html');
           if (shell) return shell;
         }
-        return new Response('Приложение офлайн, а этот ресурс ещё не закэширован. Откройте приложение онлайн один раз, чтобы он сохранился для офлайн-режима.', {
-          status: 503,
-          headers: { 'Content-Type': 'text/plain; charset=utf-8' }
-        });
+        return offlineResponse();
       });
     })
   );

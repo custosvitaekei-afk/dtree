@@ -153,7 +153,8 @@ tr.hrow td{padding:8px;background:var(--surf2);text-align:left;white-space:norma
 /* ─── STATUS ─── */
 #status{position:fixed;bottom:0;left:0;right:0;height:26px;background:var(--surf);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 12px;font-size:10px;color:var(--txt2);gap:14px;z-index:1000;font-family:'JetBrains Mono',monospace;overflow:hidden}
 #status span b{color:var(--acc)}
-#sstatus{margin-left:auto;color:var(--grn);white-space:nowrap}
+#appver{color:var(--txt2);opacity:.75;white-space:nowrap;margin-left:auto}#appver.warn{color:var(--yel);opacity:1}
+#sstatus{margin-left:14px;color:var(--grn);white-space:nowrap}
 
 /* ─── LONG PRESS HINT ─── */
 #lphint{position:fixed;bottom:34px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.8);color:var(--yel);padding:6px 14px;border-radius:20px;font-size:12px;pointer-events:none;opacity:0;transition:opacity .3s;z-index:5000}
@@ -405,6 +406,7 @@ body.ro .nacts,body.ro .nibtn,body.ro .node .minicbtn:not(.opentbl){display:none
   <span>Рамок: <b id="sn">0</b></span>
   <span>Стрелок: <b id="sa">0</b></span>
   <span>Таблиц: <b id="st">0</b></span>
+  <span id="appver" title="Версия приложения">v?</span>
   <span id="sstatus">✓ Готово</span>
 </div>
 
@@ -444,7 +446,6 @@ let S = {
   conns:[],   // [{id,from,to}]
   tables:{},  // id→{id,name,tasks:[{id,name}],entries:{dateKey:{taskId:true}},hrs?:{dateKey:{taskId:маска часов}},arch?:{…}} — hrs: частично отмеченные дни по часам (v9, часть 1 почасовой разметки); arch: архив дней старше 730 (часть 7, см. compactTableEntries)
   achiev:[],  // [{id,text,icon,cond:{type,nodeId,tableId,threshold}}]
-  cam:{x:0,y:0,scale:1},
   lastModified:0,  // v8: только информационное (время последней правки пользователем); В СРАВНЕНИЯХ НЕ УЧАСТВУЕТ
   rev:null,        // v8: токен ревизии облака, на которой основано это состояние (случайная строка, не время → часы устройств не важны)
   // ── v5 gamification ──
@@ -474,6 +475,25 @@ let S = {
   },
   collection:{}             // {emojiId: count}
 };
+// ── v9 (часть 5): КАМЕРА (положение и масштаб холста) — только локально, НЕ в S ──
+// Раньше камера лежала в S.cam и уезжала в облако, а конец каждого перетаскивания считался правкой пользователя
+// (persist(true) → fbDirty → запись в облако). Теперь камера — отдельная переменная CAM с отдельным ключом localStorage
+// этого устройства: она не попадает в облако, слияние, экспорт, подпись sigOf() и определение «есть неотправленные правки».
+// Старые сохранения и снимки облака с полем cam: migrate() его выбрасывает; своя старая камера один раз берётся из локального сохранения.
+const CAM_KEY='dtree_v5_cam';
+let CAM={x:0,y:0,scale:1};
+function loadCam(fallback){
+  let c=null,fromOld=false;
+  try{c=JSON.parse(localStorage.getItem(CAM_KEY));}catch(e){}
+  if(!c){c=fallback;fromOld=true;}
+  if(c&&isFinite(c.x)&&isFinite(c.y)&&isFinite(c.scale)&&c.scale>0){
+    CAM={x:+c.x,y:+c.y,scale:+c.scale};
+    if(fromOld)saveCam();
+  }
+}
+function saveCam(){try{localStorage.setItem(CAM_KEY,JSON.stringify(CAM));}catch(e){}}
+let _camT=null;
+function camSaveSoon(){clearTimeout(_camT);_camT=setTimeout(saveCam,400);} // колесо / щипок: пишем, когда жест закончился
 let uid=1;
 const gid=p=>p+'_'+Date.now()+'_'+(uid++);
 
@@ -511,7 +531,7 @@ let _lastSig=null,_lastRev=null;
 // ни в экспорт, ни в слияние устройств. Переживает перезапуск; выключается всегда и без условий (кнопка 👁 и плашка).
 // Блокируются только действия пользователя, меняющие данные: каждый такой обработчик начинается с roGuard() (при включённом
 // режиме он мигает плашкой и возвращает true). Облако не затронуто: получение данных и отправка уже сделанных правок идут
-// через persist(false) / syncToFb(). Камера (перемещение и масштаб) — это просмотр: сохраняется только локально (persist(false)).
+// через persist(false) / syncToFb(). Камера (перемещение и масштаб) — это просмотр: хранится только локально, отдельно от данных (CAM / saveCam(), см. v9 часть 5).
 // Страховка: persist() с правкой пользователя в этом режиме откатывает состояние к последнему сохранённому (roRollback).
 const RO_KEY='dtree_v5_readonly';
 let roMode=false;
@@ -530,7 +550,7 @@ function roApplyUi(){
 function roRollback(){
   if(_lastSig==null)return;
   try{
-    const keep={lastModified:S.lastModified,rev:S.rev,cam:S.cam};
+    const keep={lastModified:S.lastModified,rev:S.rev};
     S=Object.assign(JSON.parse(_lastSig),keep); // _lastSig — содержимое последнего сохранения без служебных lastModified / rev
     renderAll();
   }catch(e){console.warn('RO: откат не удался',e);}
@@ -614,7 +634,7 @@ function migrate(s){
       typeof v==='boolean'?{checked:v,label:'Галочка '+(i+1)}:v
     );
   });
-  if(!s.cam)s.cam={x:0,y:0,scale:1};
+  delete s.cam; // v9 (часть 5): камера больше не часть данных (см. CAM) — вычищаем поле из старых сохранений, бэкапов и снимков облака
   if(!s.achiev)s.achiev=[];
   if(!s.lastModified)s.lastModified=0;
   if(s.rev===undefined)s.rev=null; // v8
@@ -901,10 +921,10 @@ const cw=document.getElementById('cw');
 const cv=document.getElementById('cv');
 
 function applyCamera(){
-  cv.style.transform=`translate(${S.cam.x}px,${S.cam.y}px) scale(${S.cam.scale})`;
+  cv.style.transform=`translate(${CAM.x}px,${CAM.y}px) scale(${CAM.scale})`;
 }
 function s2c(sx,sy){// screen → canvas coords
-  return{x:(sx-S.cam.x)/S.cam.scale,y:(sy-S.cam.y-50)/S.cam.scale};
+  return{x:(sx-CAM.x)/CAM.scale,y:(sy-CAM.y-50)/CAM.scale};
 }
 
 // ══════════════════════════════════════════════════
@@ -1240,6 +1260,7 @@ async function fullReset(){
     localStorage.setItem('dtree_nolegacy','1');
     localStorage.removeItem('dtree_dirty');     // v8: метаданные синхронизации тоже стираем
     localStorage.removeItem('dtree_syncbase');
+    localStorage.removeItem(CAM_KEY);           // v9 (часть 5): камера — локальная, после сброса тоже по умолчанию
   }catch(e){}
 
   if(!cloudOk)alert('Не удалось связаться с облаком: локальные данные стёрты, а облачная копия будет заменена чистым состоянием при следующей синхронизации.');
@@ -1526,7 +1547,7 @@ function onMD(e,id){
 
 cw.addEventListener('mousedown',e=>{
   if(e.button!==0||dragging)return;
-  panning={sx:e.clientX-S.cam.x,sy:e.clientY-S.cam.y};
+  panning={sx:e.clientX-CAM.x,sy:e.clientY-CAM.y};
 });
 
 document.addEventListener('mousemove',e=>{
@@ -1537,24 +1558,24 @@ document.addEventListener('mousemove',e=>{
     if(el){el.style.left=n.x+'px';el.style.top=n.y+'px';}
     renderArrows();
   }else if(panning){
-    S.cam.x=e.clientX-panning.sx;S.cam.y=e.clientY-panning.sy;applyCamera();
+    CAM.x=e.clientX-panning.sx;CAM.y=e.clientY-panning.sy;applyCamera();
   }
 });
 
 document.addEventListener('mouseup',()=>{
   if(dragging){document.getElementById('nd-'+dragging.id)?.classList.remove('drag');dragging=null;persist();}
-  if(panning){panning=null;persist(!roMode);}
+  if(panning){panning=null;saveCam();} // v9 (часть 5): конец перетаскивания камеры — локальное сохранение, не правка данных
 });
 
 cw.addEventListener('wheel',e=>{
   e.preventDefault();
   const f=e.deltaY>0?.92:1.08;
-  const ns=Math.min(4,Math.max(.15,S.cam.scale*f));
+  const ns=Math.min(4,Math.max(.15,CAM.scale*f));
   const rect=cw.getBoundingClientRect();
   const mx=e.clientX-rect.left,my=e.clientY-rect.top;
-  S.cam.x=mx-(mx-S.cam.x)*(ns/S.cam.scale);
-  S.cam.y=my-(my-S.cam.y)*(ns/S.cam.scale);
-  S.cam.scale=ns;applyCamera();
+  CAM.x=mx-(mx-CAM.x)*(ns/CAM.scale);
+  CAM.y=my-(my-CAM.y)*(ns/CAM.scale);
+  CAM.scale=ns;applyCamera();camSaveSoon();
 },{passive:false});
 
 // ══════════════════════════════════════════════════
@@ -1611,7 +1632,7 @@ document.addEventListener('touchstart',e=>{
   }
   if(e.target===cw||e.target===cv||e.target.id==='svg'||e.target.id==='ag'||(roMode&&e.target.closest&&e.target.closest('.node'))){
     const t=e.touches[0];
-    panning={sx:t.clientX-S.cam.x,sy:t.clientY-S.cam.y};
+    panning={sx:t.clientX-CAM.x,sy:t.clientY-CAM.y};
   }
 },{passive:true});
 
@@ -1622,11 +1643,11 @@ document.addEventListener('touchmove',e=>{
     const dx=t1.clientX-t2.clientX,dy=t1.clientY-t2.clientY;
     const newDist=Math.sqrt(dx*dx+dy*dy);
     const f=newDist/pinch.dist;
-    const ns=Math.min(5,Math.max(.1,S.cam.scale*f));
+    const ns=Math.min(5,Math.max(.1,CAM.scale*f));
     const mx=pinch.mx,my=pinch.my-50;
-    S.cam.x=mx-(mx-S.cam.x)*(ns/S.cam.scale);
-    S.cam.y=my-(my-S.cam.y)*(ns/S.cam.scale);
-    S.cam.scale=ns;pinch.dist=newDist;applyCamera();return;
+    CAM.x=mx-(mx-CAM.x)*(ns/CAM.scale);
+    CAM.y=my-(my-CAM.y)*(ns/CAM.scale);
+    CAM.scale=ns;pinch.dist=newDist;applyCamera();camSaveSoon();return;
   }
   const t=e.touches[0];
   if(dragging){
@@ -1647,7 +1668,7 @@ document.addEventListener('touchmove',e=>{
       const dx=t.clientX-lpTx,dy=t.clientY-lpTy;
       if(Math.sqrt(dx*dx+dy*dy)>8){clearTimeout(lpTimer);lpTimer=null;lpId=null;}
     }
-    S.cam.x=t.clientX-panning.sx;S.cam.y=t.clientY-panning.sy;applyCamera();
+    CAM.x=t.clientX-panning.sx;CAM.y=t.clientY-panning.sy;applyCamera();
   }
 },{passive:false});
 
@@ -1655,7 +1676,7 @@ document.addEventListener('touchend',e=>{
   pinch=null;
   if(lpTimer){clearTimeout(lpTimer);lpTimer=null;}
   if(dragging){document.getElementById('nd-'+dragging.id)?.classList.remove('drag');dragging=null;persist();}
-  if(panning){panning=null;persist(!roMode);}
+  if(panning){panning=null;saveCam();} // v9 (часть 5): конец перетаскивания камеры — локальное сохранение, не правка данных
 },{passive:true});
 
 // ══════════════════════════════════════════════════
@@ -3938,9 +3959,44 @@ document.getElementById('bHelp').addEventListener('click',()=>{
       <li>При переустановке Chrome — импортируйте файл через «📥»</li>
       <li>Открывайте файл ВСЕГДА в одном браузере (напр. только Chrome)</li>
     </ul></div>
+    <div class="isect"><h3>🏷 Версия приложения</h3><ul>
+      <li id="verline">…</li>
+      <li>Если на разных устройствах версии разные или стоит «⚠» — откройте приложение с интернетом: оно обновится само.</li>
+    </ul></div>
     <div class="brow"><button class="mbtn ok" id="hc">Понятно!</button></div>`,
-  ov=>{ov.querySelector('#hc').onclick=()=>ov.remove();});
+  ov=>{ov.querySelector('#hc').onclick=()=>ov.remove();verInfo(t=>{const v=ov.querySelector('#verline');if(v)v.textContent=t;});});
 });
+
+// ══════════════════════════════════════════════════
+//  v9 (часть 5): ВЕРСИЯ ПРИЛОЖЕНИЯ и обновление кода на устройстве
+// ══════════════════════════════════════════════════
+// APP_BUILD — версия этого HTML. ОБЯЗАНА совпадать с CACHE в sw.js (при каждой выкладке поднимать оба). Служебная сверка:
+// SW после обновления сообщает открытым вкладкам имя своего кэша; если оно не равно APP_BUILD, вкладка работает на устаревшем коде
+// и один раз перезагружается (reloadForUpdate). Индикатор «vX.Y» внизу экрана и в «❓ Инструкция» показывает версию кода и имя кэша
+// офлайн-копии; жёлтый цвет и «⚠» — они расходятся (устройство ещё не доехало до новой версии: откройте приложение с интернетом).
+const APP_BUILD='dtree-v8.5';
+function verInfo(cb){ // cb(текст для подсказки, есть ли расхождение)
+  const mine=APP_BUILD.replace('dtree-','');
+  if(!window.caches){cb('Версия кода: '+mine+' (кэш недоступен)',false);return;}
+  caches.keys().then(ks=>{
+    const names=ks.filter(k=>k.indexOf('dtree-')===0);
+    const warn=names.length>0&&names.some(k=>k!==APP_BUILD);
+    cb('Версия кода: '+mine+'; кэш офлайн-копии: '+(names.map(k=>k.replace('dtree-','')).join(', ')||'нет'),warn);
+  }).catch(()=>cb('Версия кода: '+mine,false));
+}
+function refreshVerBadge(){
+  const el=document.getElementById('appver');if(!el)return;
+  el.textContent=APP_BUILD.replace('dtree-','');
+  verInfo((t,warn)=>{el.title=t;el.classList.toggle('warn',warn);if(warn)el.textContent=APP_BUILD.replace('dtree-','')+' ⚠';});
+}
+// Перезагрузка вкладки на новый код: максимум один раз на версию (защита от цикла), не во время ввода текста,
+// сначала локальное сохранение; несохранённая отправка в облако не теряется (fbDirty лежит в localStorage).
+function reloadForUpdate(ver){
+  try{if(sessionStorage.getItem('dtree_swreload')===ver)return;sessionStorage.setItem('dtree_swreload',ver);}catch(e){}
+  const a=document.activeElement;
+  if(a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.isContentEditable)){try{sessionStorage.removeItem('dtree_swreload');}catch(e){}return;} // человек печатает — обновимся при следующем открытии
+  persist(false).catch(()=>{}).then(()=>location.reload());
+}
 
 // ══════════════════════════════════════════════════
 //  INIT
@@ -3948,6 +4004,7 @@ document.getElementById('bHelp').addEventListener('click',()=>{
 async function init(){
   try{idb=await openIDB();}catch(e){console.warn('IDB unavailable');}
   const saved=await restore();
+  loadCam(saved&&saved.cam); // v9 (часть 5): камера — из локального ключа; старая камера из сохранения — только если ключа ещё нет
   if(saved){S=migrate(saved);}
   fbLoadMeta();      // v8: «есть неотправленные правки» и база слияния из прошлого сеанса
   _lastSig=sigOf(S); // v8: стартовое содержимое — не считается правкой пользователя
@@ -3968,9 +4025,23 @@ async function init(){
   initFirebase();
 
   // Register Service Worker (PWA)
+  refreshVerBadge();
   if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('sw.js')
-      .then(r=>console.log('SW registered',r.scope))
+    // v9 (часть 5): SW сообщает об активации новой версии; вкладка отвечает «я здесь» (иначе SW сам перезагрузит такую,
+    // старую, вкладку) и перезагружается сама, если код устарел относительно SW.
+    navigator.serviceWorker.addEventListener('message',e=>{
+      const d=e.data;if(!d||d.type!=='sw-activated')return;
+      try{if(e.ports&&e.ports[0])e.ports[0].postMessage({build:APP_BUILD});}catch(err){}
+      refreshVerBadge();
+      if(d.cache!==APP_BUILD)reloadForUpdate(d.cache);
+    });
+    // updateViaCache:'none' — sw.js проверяется на сервере, а не берётся из HTTP-кэша (иначе новая версия может «не замечаться» минутами)
+    navigator.serviceWorker.register('sw.js',{updateViaCache:'none'})
+      .then(r=>{
+        console.log('SW registered',r.scope);
+        // Установленное PWA часто не перезапускается, а лишь возвращается из фона — проверяем обновление при каждом возврате в приложение
+        document.addEventListener('visibilitychange',()=>{if(!document.hidden)r.update().catch(()=>{});});
+      })
       .catch(e=>console.log('SW unavailable (normal for local file):',e));
   }
 
@@ -4177,6 +4248,19 @@ init();
      камера двигается и сохраняется локально через persist(!roMode); страховка — persist(true) в режиме просмотра откатывает
      состояние (roRollback); облако не затронуто (persist(false)/syncToFb). sw.js: CACHE поднят до dtree-v8.4.
      ⬜ Новые обработчики, меняющие данные, обязаны начинаться с roGuard().
+
+   ✅ v9, часть 5 — обновление кода на устройстве, камера, индикатор версии (sw.js: CACHE = dtree-v8.5, в HTML APP_BUILD — те же значения):
+     — sw.js: страница (HTML) отдаётся «сеть-первой» (fetch с cache:'no-cache', ожидание до NAV_TIMEOUT_MS = 4 с, затем кэш): при интернете
+       устройство с первого открытия на актуальном коде, без интернета — как раньше, из кэша (офлайн не затронут); CDN-библиотеки и manifest
+       по-прежнему из кэша; при установке файлы приложения качаются с cache:'reload' (мимо HTTP-кэша);
+     — activate: после clients.claim() SW сообщает вкладкам 'sw-activated'; вкладка со старым кодом (нет обработчика → нет ответа за 2 с) перезагружается
+       самим SW (client.navigate), вкладка с новым кодом отвечает и перезагружается только при APP_BUILD ≠ CACHE (один раз на версию, не во время ввода);
+     — register('sw.js',{updateViaCache:'none'}) + r.update() при каждом возврате в приложение из фона (установленное PWA не перезапускается);
+     — камера: S.cam удалён, камера — переменная CAM в localStorage['dtree_v5_cam'] (saveCam / camSaveSoon): не в облаке, не в слиянии, не в экспорте,
+       не в sigOf() → перетаскивание и масштаб не создают ни правок (fbDirty), ни записей в облако; migrate() выбрасывает cam из старых данных,
+       своя прежняя камера один раз подхватывается из локального сохранения; в режиме просмотра камера двигается как раньше;
+     — индикатор версии: «vX.Y» в нижней строке (жёлтый с «⚠», если кэш офлайн-копии ≠ версии кода) и раздел «🏷 Версия приложения» в «❓ Инструкция».
+     ⬜ При каждой выкладке поднимать ОБА значения: CACHE в sw.js и APP_BUILD в HTML (должны совпадать).
 
   Все данные (лиги, сундуки, коллекция, история) продолжают храниться
   под тем же ключом dtree_v5 и синхронизироваться через тот же Firebase-путь —
